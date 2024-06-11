@@ -1,0 +1,119 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<LangVersion>latest</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	
+    <PublishAot>True</PublishAot>
+	<OptimizationPreference>Size</OptimizationPreference>
+	<StackTraceSupport>false</StackTraceSupport>
+	<InvariantGlobalization>true</InvariantGlobalization>
+	<UseSystemResourceKeys>true</UseSystemResourceKeys>
+	
+	<PublishTrimmed>true</PublishTrimmed>
+	<TrimMode>full</TrimMode>
+	
+	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+	
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <EmbeddedResource Include="assets-raw\*.png" />
+	<EmbeddedResource Include="assets-raw\icons\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\environment\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\campaign\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\defense\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\distribution\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\distribution\conveyors\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\distribution\ducts\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\distribution\stack-conveyors\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\drills\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\extra\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\liquid\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\liquid\conduits\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\logic\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\payload\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\power\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\production\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\sandbox\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\storage\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\units\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\walls\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\afflict\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\bases\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\cyclone\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\diffuse\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\disperse\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\duo\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\malign\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\salvo\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\scathe\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\scatter\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\smite\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\sublimate\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\lustre\*.png" />
+	<EmbeddedResource Include="assets-raw\sprites\blocks\turrets\titan\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="assets-raw\sprites\blocks\environment\dark-panel-3.png" />
+    <None Remove="assets-raw\sprites\cat.png" />
+    <None Remove="assets-raw\sprites\effects\laser-end.png" />
+    <None Remove="assets-raw\sprites\effects\laser-top-end.png" />
+    <None Remove="assets-raw\sprites\effects\laser-top.png" />
+    <None Remove="assets-raw\sprites\effects\laser.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--EmbeddedResource Include="assets-raw\sprites\blocks\environment\dark-panel-3.png" /-->
+    <EmbeddedResource Include="assets-raw\sprites\cat.png" />
+    <EmbeddedResource Include="assets-raw\sprites\effects\laser-end.png" />
+    <EmbeddedResource Include="assets-raw\sprites\effects\laser-top-end.png" />
+    <EmbeddedResource Include="assets-raw\sprites\effects\laser-top.png" />
+    <EmbeddedResource Include="assets-raw\sprites\effects\laser.png" />
+	<EmbeddedResource Include="assets-raw\sprites\effects\square-shadow.png" />
+	<EmbeddedResource Include="assets-raw\sprites\effects\square-shadow-64.png" />
+	<EmbeddedResource Include="assets-raw\sprites\effects\square-shadow-40.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Mindustry\Blocks\BlockData.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>BlockData.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Mindustry\Blocks\BlockData.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>BlockData.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>
