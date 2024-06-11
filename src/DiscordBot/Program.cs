@@ -87,9 +87,17 @@ client.ReactionAdded += OnReaction;
 client.UserJoined += OnUserJoin;
 client.Log += Log;
 
+bool clearGuildCommands = false;
+ulong guildId = 0;
+//Skip commands registration in order to clear guild commands
+if (args.Length <= 1 || args[0] != "-rgc" || !ulong.TryParse(args[1], out guildId))
+{
+    await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+    await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+}
+else
+    clearGuildCommands = true;
 
-await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
-await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 client.InteractionCreated += async x =>
 {
@@ -100,8 +108,17 @@ client.InteractionCreated += async x =>
 };
 client.Ready += async () =>
 {
-    globalCommands = await interaction.RegisterCommandsGloballyAsync();
-    await client.SetActivityAsync(new Game("ping for help", ActivityType.Watching));
+    if (clearGuildCommands)
+    {
+        await interaction.RegisterCommandsToGuildAsync(guildId);
+        Console.WriteLine("Guild commands now should be removed. Exiting...");
+        cts.Cancel();
+    }
+    else
+    {
+        globalCommands = await interaction.RegisterCommandsGloballyAsync();
+        await client.SetActivityAsync(new Game("ping for help", ActivityType.Watching));
+    }
 };
 
 
