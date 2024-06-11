@@ -4,42 +4,41 @@ namespace DiscordBot.Database;
 
 public class WarningModel
 {
-    [NotMapped]
-    private long _issueTime;
+    [NotMapped] private long _issueTime;
 
     /// <summary>
-    /// Warning ID
+    ///     Warning ID
     /// </summary>
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public ulong Id { get; set; }
 
     /// <summary>
-    /// Warned user ID
+    ///     Warned user ID
     /// </summary>
     public ulong UserID { get; set; }
-    
+
     /// <summary>
-    /// Mod who warned user
+    ///     Mod who warned user
     /// </summary>
     public ulong ModeratorId { get; set; }
 
     /// <summary>
-    /// The guild ID where this warning created
+    ///     The guild ID where this warning created
     /// </summary>
     public ulong GuildID { get; set; }
-    
+
     /// <summary>
-    /// Reason for warning
+    ///     Reason for warning
     /// </summary>
     public string Summary { get; set; }
-    
+
     /// <summary>
-    /// Link to warning message
+    ///     Link to warning message
     /// </summary>
     public string WarningUrl { get; set; }
 
     /// <summary>
-    /// Date of issue
+    ///     Date of issue
     /// </summary>
     public long IssueTime
     {
@@ -52,7 +51,7 @@ public class WarningModel
     }
 
     /// <summary>
-    /// Warning expire time
+    ///     Warning expire time
     /// </summary>
     // [NotMapped]//We can calculate this in place
     public long ExpireTime { get; set; }

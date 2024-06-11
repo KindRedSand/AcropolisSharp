@@ -6,7 +6,6 @@ using Playground.Mindustry.Maps;
 using Playground.Resource;
 
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Playground.Mindustry.Blocks

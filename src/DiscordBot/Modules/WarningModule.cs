@@ -14,17 +14,17 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task WarnUser(IGuildUser user, string reason)
     {
-        await DeferAsync(ephemeral: false);
-        var warning = new WarningModel()
+        await DeferAsync(false);
+        var warning = new WarningModel
         {
             Summary = reason,
             IssueTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             GuildID = Context.Guild.Id,
             ModeratorId = Context.User.Id,
-            UserID = user.Id,
+            UserID = user.Id
         };
-        
-        var warningsCount = (await db.GetUserWarnings(Context.Guild.Id, user.Id)).Count() + 1;
+
+        int warningsCount = (await db.GetUserWarnings(Context.Guild.Id, user.Id)).Count() + 1;
 
         if (warningsCount > 4 + 1)
         {
@@ -34,17 +34,17 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 .Build());
             return;
         }
-        
+
         var emb = new EmbedBuilder();
         emb.WithAuthor(user)
             .WithColor(ConfigModule.EmbedColor);
-        IUserMessage msg; 
+        IUserMessage msg;
         switch (Context.Interaction.UserLocale)
         {
             case "ru":
                 emb.WithDescription($"**Пользователь {user.Mention} предупрежден**\n" +
-                              $"Причина: {reason}\n" +
-                              $"Предупреждение #{warningsCount}");
+                                    $"Причина: {reason}\n" +
+                                    $"Предупреждение #{warningsCount}");
                 msg = await FollowupAsync(embed: emb.Build(), ephemeral: false);
                 break;
             default:
@@ -56,17 +56,48 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
         }
 
         warning.WarningUrl = $"https://discord.com/channels/{Context.Guild.Id}/{Context.Channel.Id}/{msg.Id}";
-        
+
         await db.AddAsync(warning);
         await db.SaveChangesAsync();
+
+        if (warningsCount > 1)
+        {
+            var cfg = await db.GetNonTrackedConfig(Context.Guild.Id);
+            var channel = cfg?.LogChannel != null ? Context.Guild.GetTextChannel(cfg.LogChannel.Value) : null;
+            try
+            {
+                await user.SetTimeOutAsync(warningsCount == 2 ? TimeSpan.FromHours(1) : TimeSpan.FromDays(1));
+                if (channel != null)
+                    await channel.SendMessageAsync(embed: new EmbedBuilder()
+                        .WithAuthor(user)
+                        .WithDescription(
+                            $"""
+                             У пользователя уже {warningsCount} предупреждений!
+                             Автоматически выдан тайм-аут на 1 {(warningsCount == 2 ? "час" : "день")}
+                             """
+                        ).Build());
+            }
+            catch (Exception _)
+            {
+                if(channel != null)
+                    await channel.SendMessageAsync(embed: new EmbedBuilder()
+                        .WithAuthor(user)
+                        .WithDescription(
+                            $"""
+                             У пользователя уже {warningsCount} предупреждений!
+                             У бота недостаточно прав на выдачу тайм-аута, выдано только предупреждение
+                             """
+                        ).Build());
+            }
+        }
     }
-    
-    
+
+
     [SlashCommand("media", "Отключить встраивание для пользователя", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task NoMedia(IGuildUser user)
     {
-        await DeferAsync(ephemeral: false);
+        await DeferAsync(false);
 
         var config = await db.GetNonTrackedConfig(Context.Guild.Id);
         if (config?.NoMediaRoleId == null)
@@ -74,11 +105,11 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             await FollowupAsync("No media роль не задана :SMOrc:", ephemeral: false);
             return;
         }
-        
+
         // Did we ever need db entry for this?
-        var noMedia = await db.NoMedia.FirstOrDefaultAsync( x =>
+        var noMedia = await db.NoMedia.FirstOrDefaultAsync(x =>
             x.UserID == user.Id && x.GuildID == Context.Guild.Id);
-        var hasRole = user.RoleIds.Any(x => x == config.NoMediaRoleId);
+        bool hasRole = user.RoleIds.Any(x => x == config.NoMediaRoleId);
         var emb = new EmbedBuilder();
         emb.WithAuthor(user)
             .WithColor(ConfigModule.EmbedColor);
@@ -88,7 +119,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             {
                 db.Remove(noMedia);
                 await db.SaveChangesAsync();
-            }            
+            }
+
             await user.RemoveRoleAsync(config.NoMediaRoleId.Value);
             switch (Context.Interaction.UserLocale)
             {
@@ -117,25 +149,25 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                     break;
             }
         }
-        
-        noMedia = new NoMediaModel()
+
+        noMedia = new NoMediaModel
         {
             // Summary = reason,
             IssueTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             GuildID = Context.Guild.Id,
             ModeratorId = Context.User.Id,
-            UserID = user.Id,
+            UserID = user.Id
         };
         await db.AddAsync(noMedia);
         await db.SaveChangesAsync();
     }
-    
-    
+
+
     [SlashCommand("unwarn", "Убрать предупреждение", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task UnWarnUser(IGuildUser user)
     {
-        await DeferAsync(ephemeral: false);
+        await DeferAsync(false);
         var warning = await db.Warnings.OrderBy(x => x.IssueTime)
             .LastOrDefaultAsync(x => x.GuildID == Context.Guild.Id && x.UserID == user.Id);
 
@@ -155,6 +187,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                     await FollowupAsync(embed: emb.Build(), ephemeral: false);
                     break;
             }
+
             return;
         }
 
@@ -180,14 +213,14 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     {
         await MyWarnings();
     }
-    
+
     [SlashCommand("my-warnings", "Посмотреть свои предупреждения", runMode: RunMode.Async)]
     public async Task MyWarnings()
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
 
         var warnings = (await db.GetUserWarnings(Context.Guild.Id, Context.User.Id)).ToImmutableArray();
-        
+
         var emb = new EmbedBuilder();
         emb.WithAuthor(Context.User)
             .WithColor(ConfigModule.EmbedColor);
@@ -197,8 +230,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 emb.WithTitle($"У вас {warnings.Length} предупреждений");
                 if (warnings.Length > 0)
                 {
-                    EmbedFieldBuilder[] fields = new EmbedFieldBuilder[warnings.Length];
-                    for (int i = 0; i < warnings.Length; i++)
+                    var fields = new EmbedFieldBuilder[warnings.Length];
+                    for (var i = 0; i < warnings.Length; i++)
                     {
                         // var sb = new StringBuilder();
                         // var delta = DateTimeOffset.FromUnixTimeSeconds(warnings[i].ExpireTime) - DateTimeOffset.UtcNow;
@@ -210,26 +243,30 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                         // {
                         //     sb.Append($"{delta.Hours} часов");
                         // }
-                        
+
                         var user = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i+1}")
-                                .WithValue($"Выдана: {user.Mention}\n" +
-                                           $"Причина: {warnings[i].Summary}\n" +
-                                           $"Ссылка: {warnings[i].WarningUrl}\n" +
-                                           $"Истекает <t:{warnings[i].ExpireTime}:R>" )
-                                .WithIsInline(true);
+                        fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i + 1}")
+                            .WithValue(
+                                 $"""
+                                 Выдана: {user.Mention}\
+                                 Причина: {warnings[i].Summary}
+                                 Ссылка: {warnings[i].WarningUrl}
+                                 Истекает <t:{warnings[i].ExpireTime}:R>
+                                 """)
+                            .WithIsInline(true);
                     }
+
                     emb.WithFields(fields);
                 }
-                
+
                 await FollowupAsync(embed: emb.Build(), ephemeral: true);
                 break;
             default:
                 emb.WithTitle($"You have {warnings.Length} warnings");
                 if (warnings.Length > 0)
                 {
-                    EmbedFieldBuilder[] fields = new EmbedFieldBuilder[warnings.Length];
-                    for (int i = 0; i < warnings.Length; i++)
+                    var fields = new EmbedFieldBuilder[warnings.Length];
+                    for (var i = 0; i < warnings.Length; i++)
                     {
                         // var sb = new StringBuilder();
                         // var delta = DateTimeOffset.FromUnixTimeSeconds(warnings[i].ExpireTime) - DateTimeOffset.UtcNow;
@@ -241,28 +278,32 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                         // {
                         //     sb.Append($"{delta.Hours} hours");
                         // }
-                        
+
                         var user = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Warning #{i+1}")
-                            .WithValue($"Issued by: {user.Mention}\n" +
-                                       $"Reason: {warnings[i].Summary}\n" +
-                                       $"Link: {warnings[i].WarningUrl}\n" +
-                                       $"Expire <t:{warnings[i].ExpireTime}:R>")
+                        fields[i] = new EmbedFieldBuilder().WithName($"Warning #{i + 1}")
+                            .WithValue(
+                                $"""
+                                Issued by: {user.Mention}
+                                Reason: {warnings[i].Summary}
+                                Link: {warnings[i].WarningUrl}
+                                Expire <t:{warnings[i].ExpireTime}:R>
+                                """)
                             .WithIsInline(true);
                     }
+
                     emb.WithFields(fields);
                 }
-                
+
                 await FollowupAsync(embed: emb.Build(), ephemeral: true);
                 break;
         }
     }
-    
+
     [SlashCommand("warnings", "Показать предупреждения пользователя", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task Warnings(IGuildUser user)
     {
-        await DeferAsync(ephemeral: false);
+        await DeferAsync(false);
 
         var warnings = (await db.GetUserWarnings(Context.Guild.Id, user.Id)).ToImmutableArray();
 
@@ -275,8 +316,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 emb.WithDescription($"У {user.Mention} {warnings.Length} предупреждений");
                 if (warnings.Length > 0)
                 {
-                    EmbedFieldBuilder[] fields = new EmbedFieldBuilder[warnings.Length];
-                    for (int i = 0; i < warnings.Length; i++)
+                    var fields = new EmbedFieldBuilder[warnings.Length];
+                    for (var i = 0; i < warnings.Length; i++)
                     {
                         // var sb = new StringBuilder();
                         // var delta = DateTimeOffset.FromUnixTimeSeconds(warnings[i].ExpireTime) - DateTimeOffset.UtcNow;
@@ -288,26 +329,30 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                         // {
                         //     sb.Append($"{delta.Hours} часов");
                         // }
-                        
+
                         var mod = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i+1}")
-                                .WithValue($"Выдана: {mod.Mention}\n" +
-                                           $"Причина: {warnings[i].Summary}\n" +
-                                           $"Ссылка: {warnings[i].WarningUrl}\n" +
-                                           $"Истекает <t:{warnings[i].ExpireTime}:R>")
-                                .WithIsInline(true);
+                        fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i + 1}")
+                            .WithValue(
+                                 $"""
+                                 Выдана: {mod.Mention}
+                                 Причина: {warnings[i].Summary}
+                                 Ссылка: {warnings[i].WarningUrl}
+                                 Истекает <t:{warnings[i].ExpireTime}:R> 
+                                 """)
+                            .WithIsInline(true);
                     }
+
                     emb.WithFields(fields);
                 }
-                
+
                 await FollowupAsync(embed: emb.Build(), ephemeral: true);
                 break;
             default:
                 emb.WithDescription($"User {user.Mention} has {warnings.Length} warnings");
                 if (warnings.Length > 0)
                 {
-                    EmbedFieldBuilder[] fields = new EmbedFieldBuilder[warnings.Length];
-                    for (int i = 0; i < warnings.Length; i++)
+                    var fields = new EmbedFieldBuilder[warnings.Length];
+                    for (var i = 0; i < warnings.Length; i++)
                     {
                         // var sb = new StringBuilder();
                         // var delta = DateTimeOffset.FromUnixTimeSeconds(warnings[i].ExpireTime) - DateTimeOffset.UtcNow;
@@ -319,21 +364,24 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                         // {
                         //     sb.Append($"{delta.Hours} hours");
                         // }
-                        
+
                         var mod = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Warning #{i+1}")
-                            .WithValue($"Issued by: {mod.Mention}\n" +
-                                       $"Reason: {warnings[i].Summary}\n" +
-                                       $"Link: {warnings[i].WarningUrl}\n" +
-                                       $"Expire <t:{warnings[i].ExpireTime}:R>")
+                        fields[i] = new EmbedFieldBuilder().WithName($"Warning #{i + 1}")
+                            .WithValue(
+                                 $"""
+                                 Issued by: {mod.Mention}
+                                 Reason: {warnings[i].Summary}
+                                 Link: {warnings[i].WarningUrl}
+                                 Expire <t:{warnings[i].ExpireTime}:R>
+                                 """)
                             .WithIsInline(true);
                     }
+
                     emb.WithFields(fields);
                 }
-                
+
                 await FollowupAsync(embed: emb.Build(), ephemeral: false);
                 break;
         }
     }
-    
 }

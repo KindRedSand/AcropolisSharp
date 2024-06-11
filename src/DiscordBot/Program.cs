@@ -8,7 +8,6 @@ using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBot.Database;
 using DiscordBot.Modules;
-using Hjson;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Playground.Mindustry.Blocks;
@@ -22,7 +21,7 @@ var messagesIndex = 0;
 
 string oatoken;
 
-if (!File.Exists(".secret") || 
+if (!File.Exists(".secret") ||
     string.IsNullOrEmpty(oatoken = File.ReadAllText(".secret").Trim()))
 {
     Console.WriteLine("Please, fill .secret file before launching this bot!");
@@ -39,13 +38,13 @@ Items.Load();
 // await db.Database.EnsureCreatedAsync();
 
 
-var client = new DiscordSocketClient(new DiscordSocketConfig()
+var client = new DiscordSocketClient(new DiscordSocketConfig
 {
     GatewayIntents = GatewayIntents.Guilds |
                      GatewayIntents.GuildEmojis | GatewayIntents.GuildMessageReactions | GatewayIntents.GuildMessages |
                      GatewayIntents.MessageContent | GatewayIntents.DirectMessageReactions |
                      GatewayIntents.GuildBans | GatewayIntents.GuildMembers,
-    UseInteractionSnowflakeDate = false,//Sometimes give false positive System.TimeoutException
+    UseInteractionSnowflakeDate = false //Sometimes give false positive System.TimeoutException
 });
 
 var commands = new CommandService();
@@ -70,10 +69,7 @@ var services = new ServiceCollection()
     .AddSingleton(commands)
     // .AddSingleton<SQLiteDbConnector>()
     .AddSingleton<HttpClient>()
-    .AddDbContext<BotDatabase>((x) =>
-    {
-        x.UseSqlite("Data Source=base.db");
-    })
+    .AddDbContext<BotDatabase>(x => { x.UseSqlite("Data Source=base.db"); })
     .BuildServiceProvider();
 
 
@@ -95,7 +91,7 @@ client.Log += Log;
 await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
-client.InteractionCreated += async (x) =>
+client.InteractionCreated += async x =>
 {
     var context = new SocketInteractionContext(client, x);
 
@@ -104,8 +100,8 @@ client.InteractionCreated += async (x) =>
 };
 client.Ready += async () =>
 {
-   globalCommands = await interaction.RegisterCommandsGloballyAsync();
-   await client.SetActivityAsync(new Game("ping for help", ActivityType.Watching));
+    globalCommands = await interaction.RegisterCommandsGloballyAsync();
+    await client.SetActivityAsync(new Game("ping for help", ActivityType.Watching));
 };
 
 
@@ -116,7 +112,7 @@ await client.StartAsync();
 while (!cts.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(60)))
 {
     //Periodic tasks
-    
+
     //Moved to db.GetUserWarnings();
     //It should automatically clean up any expired warnings
     // var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -130,29 +126,27 @@ while (!cts.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(60)))
 }
 
 
-async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageChannel, ulong> cchannel, SocketReaction reaction)
+async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageChannel, ulong> cchannel,
+    SocketReaction reaction)
 {
-    if(!reaction.User.IsSpecified)
+    if (!reaction.User.IsSpecified)
         return;
     var msg = reaction.Message.IsSpecified ? reaction.Message.Value : await reaction.Channel.GetMessageAsync(cmsg.Id);
     //Only check reactions on own messages
-    if(msg.Author.Id != client.CurrentUser.Id)
+    if (msg.Author.Id != client.CurrentUser.Id)
         return;
-    if(reaction.Emote.Name != "\u274c")
+    if (reaction.Emote.Name != "\u274c")
         return;
-    
+
     if (msg.Embeds.Count > 0)
     {
         var emb = msg.Embeds.First();
         if (emb.Footer?.Text.Contains("UserID:") ?? false)
         {
-            var sid = emb.Footer.Value.Text.Split("UserID: ").Last();
-            if(!ulong.TryParse(sid, out var id))
+            string sid = emb.Footer.Value.Text.Split("UserID: ").Last();
+            if (!ulong.TryParse(sid, out ulong id))
                 return;
-            if (reaction.User.Value.Id == id)
-            {
-                await msg.DeleteAsync();
-            }
+            if (reaction.User.Value.Id == id) await msg.DeleteAsync();
         }
     }
 }
@@ -162,40 +156,43 @@ async Task OnUserJoin(SocketGuildUser user)
 {
     var entry = await db.Warnings.AsNoTracking()
         .FirstOrDefaultAsync(x => x.GuildID == user.Guild.Id && x.UserID == user.Id);
-    if(entry == null)
+    if (entry == null)
         return;
-    
+
     var config = await db.GetNonTrackedConfig(user.Guild.Id);
     if (config == null)
     {
         //TODO: Properly log invalid states
-        Console.WriteLine($"Found NoMedia entry for user {user.Id} in guild {user.Guild.Name} but guild don't have config entry!");
+        Console.WriteLine(
+            $"Found NoMedia entry for user {user.Id} in guild {user.Guild.Name} but guild don't have config entry!");
         return;
     }
-    if(config.NoMediaRoleId == null)
+
+    if (config.NoMediaRoleId == null)
         return;
     var role = user.Guild.GetRole(config.NoMediaRoleId.Value);
-    if(role == null)
+    if (role == null)
         return;
     await user.AddRoleAsync(role);
 }
 
 #region Message Logging
+
 async Task OnMessage(SocketMessage msg)
 {
-    if(msg.Author.IsBot ||//We don't want to log others bots garbage
-       msg.Channel is not SocketGuildChannel channel)
+    if (msg.Author.IsBot || //We don't want to log others bots garbage
+        msg.Channel is not SocketGuildChannel channel)
         return;
-    
+
     if (msg is SocketUserMessage umsg)
     {
-        int argPos = 0;
+        var argPos = 0;
 
-        if (umsg.Content.Trim().StartsWith(client.CurrentUser.Mention))//.HasMentionPrefix(client.CurrentUser, ref argPos))
-        {
+        if (umsg.Content.Trim()
+            .StartsWith(client.CurrentUser.Mention)) //.HasMentionPrefix(client.CurrentUser, ref argPos))
             // var context = new SocketCommandContext(client, umsg);
             // var res = await commands.ExecuteAsync(context: context, argPos: argPos, services: null);
-            if (msg.Author is SocketGuildUser user )
+            if (msg.Author is SocketGuildUser user)
             {
                 var emb = new EmbedBuilder()
                     .WithColor(ConfigModule.EmbedColor)
@@ -204,13 +201,12 @@ async Task OnMessage(SocketMessage msg)
                 var sb = new StringBuilder();
                 foreach (var cmd in globalCommands)
                 {
-                    if(cmd.Name == "wrn")// Skip this alias
+                    if (cmd.Name == "wrn") // Skip this alias
                         continue;
-                    
-                    if (cmd.DefaultMemberPermissions.RawValue == 0 || (cmd.DefaultMemberPermissions.RawValue & user.GuildPermissions.RawValue) > 0ul)
-                    {
+
+                    if (cmd.DefaultMemberPermissions.RawValue == 0 ||
+                        (cmd.DefaultMemberPermissions.RawValue & user.GuildPermissions.RawValue) > 0ul)
                         sb.Append($"</{cmd.Name}:{cmd.Id}> - {cmd.Description}\n");
-                    }
                 }
 
                 var field = new EmbedFieldBuilder()
@@ -231,18 +227,17 @@ async Task OnMessage(SocketMessage msg)
                     }
                 });
             }
-        }
     }
-    
-    var messageModel = new MessageModel()
+
+    var messageModel = new MessageModel
     {
         Id = msg.Id,
         UserID = msg.Author.Id,
         Content = msg.Content,
-        AttachmentsUrls = msg.Attachments.Select( x=> x.Url).ToArray(),
+        AttachmentsUrls = msg.Attachments.Select(x => x.Url).ToArray(),
         ChannelID = channel.Id,
         GuildID = channel.Guild.Id,
-        LogTime = DateTime.UtcNow,
+        LogTime = DateTime.UtcNow
     };
 
     messages[messagesIndex++] = messageModel;
@@ -251,8 +246,8 @@ async Task OnMessage(SocketMessage msg)
 
 async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMessageChannel ichannel)
 {
-    if(msg.Author.IsBot ||//We don't want to log others bots garbage
-       msg.Channel is not SocketTextChannel channel)
+    if (msg.Author.IsBot || //We don't want to log others bots garbage
+        msg.Channel is not SocketTextChannel channel)
         return;
 
     var messageModel =
@@ -260,26 +255,26 @@ async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMe
 
     if (messageModel == null)
     {
-        messageModel = new MessageModel()
+        messageModel = new MessageModel
         {
             Id = msg.Id,
             UserID = msg.Author.Id,
             Content = msg.Content,
-            AttachmentsUrls = msg.Attachments.Select( x=> x.Url).ToArray(),
+            AttachmentsUrls = msg.Attachments.Select(x => x.Url).ToArray(),
             ChannelID = channel.Id,
             GuildID = channel.Guild.Id,
-            LogTime = DateTime.UtcNow,
+            LogTime = DateTime.UtcNow
         };
-        
+
         messages[messagesIndex++] = messageModel;
         messagesIndex %= messages.Length;
         return;
     }
-    
+
     var config = await db.GetNonTrackedConfig(channel.Guild.Id);
-    if(config?.LogChannel == null)
+    if (config?.LogChannel == null)
         return;
-    
+
     var logChannel = channel.Guild.GetTextChannel(config.LogChannel.Value);
     if (logChannel != null)
     {
@@ -287,27 +282,27 @@ async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMe
         var sb = new StringBuilder();
         emb.WithAuthor(msg.Author)
             .WithColor(ConfigModule.EmbedColor)
-            .WithTitle($"Сообщение в канале <#{channel.Id}> было изменено: https://discord.com/channels/{channel.Guild.Id}/{channel.Id}/{msg.Id}");
-        
+            .WithTitle(
+                $"Сообщение в канале <#{channel.Id}> было изменено: https://discord.com/channels/{channel.Guild.Id}/{channel.Id}/{msg.Id}");
+
         sb.Append("**До:**\n");
         sb.Append(messageModel.Content);
         sb.Append("\n\n**После:**\n");
         sb.Append(msg.Content);
-     
+
         if (messageModel.AttachmentsUrls?.Length > 0)
         {
             sb.Append('\n');
             emb.WithImageUrl(messageModel.AttachmentsUrls[0]);
-            for (int i = 0; i < messageModel.AttachmentsUrls.Length; i++)
-            {
+            for (var i = 0; i < messageModel.AttachmentsUrls.Length; i++)
                 sb.Append($"[file{i}]({messageModel.AttachmentsUrls[i]})\n");
-            }
         }
+
         emb.WithDescription(sb.ToString());
-    
+
         await logChannel.SendMessageAsync(embed: emb.Build());
     }
-    
+
     messageModel.Content = msg.Content;
     messageModel.AttachmentsUrls = msg.Attachments.Select(x => x.Url).ToArray();
     // db.Messages.Update(messageModel);
@@ -319,40 +314,37 @@ async Task OnDelete(Cacheable<IMessage, ulong> cache, Cacheable<IMessageChannel,
     var messageModel =
         messages.FirstOrDefault(x => x?.Id == cache.Id);
 
-    if (messageModel == null)
-    {
-        return;
-    }
-    
+    if (messageModel == null) return;
+
     var config = await db.GetNonTrackedConfig(messageModel.GuildID);
-    if(config?.LogChannel == null)
+    if (config?.LogChannel == null)
         return;
     if (await client.GetChannelAsync(config.LogChannel.Value) is SocketTextChannel logChannel)
     {
         var emb = new EmbedBuilder();
         var sb = new StringBuilder();
         var usr = client.GetUser(messageModel.UserID);
-        
+
         emb.WithAuthor(usr)
             .WithColor(ConfigModule.EmbedColor)
             .WithTitle($"Сообщение в канале <#{cchannel.Id}> было удалено:");
-        
+
         sb.Append(messageModel.Content);
-     
+
         if (messageModel.AttachmentsUrls?.Length > 0)
         {
             sb.Append('\n');
             emb.WithImageUrl(messageModel.AttachmentsUrls[0]);
-            for (int i = 0; i < messageModel.AttachmentsUrls.Length; i++)
-            {
+            for (var i = 0; i < messageModel.AttachmentsUrls.Length; i++)
                 sb.Append($"[file{i}]({messageModel.AttachmentsUrls[i]})\n");
-            }
         }
+
         emb.WithDescription(sb.ToString());
-    
+
         await logChannel.SendMessageAsync(embed: emb.Build());
     }
 }
+
 #endregion
 
 Task Log(LogMessage msg)

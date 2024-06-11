@@ -5,33 +5,33 @@ namespace DiscordBot.Database;
 public class NoMediaModel
 {
     /// <summary>
-    /// Warning ID
+    ///     Warning ID
     /// </summary>
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public ulong Id { get; set; }
 
     /// <summary>
-    /// Warned user ID
+    ///     Warned user ID
     /// </summary>
     public ulong UserID { get; set; }
-    
+
     /// <summary>
-    /// Mod who warned user
+    ///     Mod who warned user
     /// </summary>
     public ulong ModeratorId { get; set; }
 
     /// <summary>
-    /// The guild ID where this warning created
+    ///     The guild ID where this warning created
     /// </summary>
     public ulong GuildID { get; set; }
-    
+
     /// <summary>
-    /// Reason for warning
+    ///     Reason for warning
     /// </summary>
     public string Summary { get; set; }
-    
+
     /// <summary>
-    /// Reason for warning
+    ///     Reason for warning
     /// </summary>
     public long IssueTime { get; set; }
 }

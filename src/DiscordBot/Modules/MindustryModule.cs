@@ -10,13 +10,17 @@ using SixLabors.ImageSharp;
 
 namespace DiscordBot.Modules;
 
-public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, HttpClient http)
+public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, HttpClient http)
     : InteractionModuleBase<SocketInteractionContext>
 {
+    private readonly Emoji cross = new("\u274c");
+    private readonly Emoji tumbsDown = new("\ud83d\udc4e");
+    private readonly Emoji tumbsUp = new("\ud83d\udc4d");
+
     [SlashCommand("schematic", "Опубликовать схему. Укажите только 1 аргумент!", runMode: RunMode.Async)]
     public async Task PostSchematic(string? base64 = null, Attachment? file = null)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
 
         var config = await db.GetNonTrackedConfig(Context.Guild.Id);
         if (config?.SchematicChannel == null)
@@ -48,12 +52,9 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
 
                 ms = new MemoryStream();
                 var resp = await http.GetAsync(file.Url);
-                if (!resp.IsSuccessStatusCode)
-                {
-                    await FollowupAsync("Failed to download file");
-                }
+                if (!resp.IsSuccessStatusCode) await FollowupAsync("Failed to download file");
                 await resp.Content.CopyToAsync(ms);
-                
+
                 //ms = new MemoryStream(bytes);
             }
             else if (base64 != null)
@@ -78,14 +79,14 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
 
             ms.Seek(0, SeekOrigin.Begin);
 
-            var scheme = Schematics.Read(ms, closeAfterRead:false);
-            
+            var scheme = Schematics.Read(ms, false);
+
             using var imgSource = SchematicDrawer.DrawSchemePreview(scheme);
             using var imgMs = new MemoryStream();
             await imgSource.SaveAsPngAsync(imgMs);
             ms.Seek(0, SeekOrigin.Begin);
             imgMs.Seek(0, SeekOrigin.Begin);
-            
+
             var channel = Context.Guild.GetTextChannel(config.SchematicChannel.Value);
             var attachments = new FileAttachment[2];
             attachments[0] = new FileAttachment(imgMs, "preview.png");
@@ -96,14 +97,12 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
             {
                 var block = Blocks.blocks[tile.block.name];
                 foreach (var itemPrice in block.Price)
-                {
-                    if(prices.ContainsKey(itemPrice.name))
+                    if (prices.ContainsKey(itemPrice.name))
                         prices[itemPrice.name] += itemPrice.count;
                     else
                         prices.Add(itemPrice.name, itemPrice.count);
-                }
             }
-            
+
             var emb = new EmbedBuilder();
             emb.WithAuthor(Context.User)
                 .WithTitle(scheme.tags["name"])
@@ -111,9 +110,9 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
                 .WithDescription(formatPrice(prices, emotes))
                 .WithFooter($"{scheme.width}x{scheme.height} | UserID: {Context.User.Id}")
                 .WithImageUrl("attachment://preview.png");
-            
+
             await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
-            
+
             emb = new EmbedBuilder();
             switch (Context.Interaction.UserLocale)
             {
@@ -142,16 +141,16 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
         }
         finally
         {
-            if(ms != null)
+            if (ms != null)
                 await ms.DisposeAsync();
         }
     }
-    
-    
+
+
     [SlashCommand("map", "Опубликовать карту", runMode: RunMode.Async)]
     public async Task PostMap(Attachment file)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
 
         var config = await db.GetNonTrackedConfig(Context.Guild.Id);
         if (config?.MapChannel == null)
@@ -159,6 +158,7 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
             await FollowupAsync("Map channel was not set. Please notify administrator about this!");
             return;
         }
+
         MemoryStream? ms = null;
         try
         {
@@ -177,7 +177,7 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
             //
             //     return;
             // }
-            
+
             if (!file.Filename.EndsWith(".msav"))
             {
                 switch (Context.Interaction.UserLocale)
@@ -195,33 +195,27 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
 
             ms = new MemoryStream();
             var resp = await http.GetAsync(file.Url);
-            if (!resp.IsSuccessStatusCode)
-            {
-                await FollowupAsync("Failed to download file");
-            }
+            if (!resp.IsSuccessStatusCode) await FollowupAsync("Failed to download file");
             await resp.Content.CopyToAsync(ms);
 
             ms.Seek(0, SeekOrigin.Begin);
 
-            var ctx = SaveIO.load(ms, closeAfterRead: false);
-            if (ctx == null)
-            {
-                throw new InvalidDataException("SaveIO returned null");
-            }
+            var ctx = SaveIO.load(ms, false);
+            if (ctx == null) throw new InvalidDataException("SaveIO returned null");
             //var scheme = Map.Read(ms, closeAfterRead:false);
-            
-            using var imgSource = ctx.GetMapImage();//= SchematicDrawer.DrawSchemePreview(scheme);
+
+            using var imgSource = ctx.GetMapImage(); //= SchematicDrawer.DrawSchemePreview(scheme);
             using var imgMs = new MemoryStream();
             await imgSource.SaveAsPngAsync(imgMs);
             ms.Seek(0, SeekOrigin.Begin);
             imgMs.Seek(0, SeekOrigin.Begin);
-            
+
             var channel = Context.Guild.GetTextChannel(config.MapChannel.Value);
             var attachments = new FileAttachment[2];
             attachments[0] = new FileAttachment(imgMs, "preview.png");
             attachments[1] = new FileAttachment(ms, $"{ctx.Meta.mapName}.msav");
-            
-            
+
+
             var emb = new EmbedBuilder();
             emb.WithAuthor(Context.User)
                 .WithTitle(ctx.Meta.mapName)
@@ -232,7 +226,7 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
                 emb.WithDescription(tag);
 
             await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
-            
+
             emb = new EmbedBuilder();
             switch (Context.Interaction.UserLocale)
             {
@@ -261,37 +255,30 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
         }
         finally
         {
-            if(ms != null)
+            if (ms != null)
                 await ms.DisposeAsync();
         }
     }
 
-
-    private readonly Emoji cross = new Emoji("\u274c");
-    private readonly Emoji tumbsUp = new Emoji("\ud83d\udc4d");
-    private readonly Emoji tumbsDown = new Emoji("\ud83d\udc4e");
     private async Task addReactions(RestMessage msg)
     {
         await msg.AddReactionAsync(tumbsUp);
         await msg.AddReactionAsync(tumbsDown);
         await msg.AddReactionAsync(cross);
     }
-    
+
     private string formatPrice(Dictionary<string, int> dictionary, JsonObject emotes)
     {
         var sb = new StringBuilder();
         sb.Append("Необходимые ресурсы:\n");
         var i = 0;
-        foreach (var (name, count) in dictionary)
+        foreach ((string name, int count) in dictionary)
         {
-            if(emotes.ContainsKey(name))
-            {
-                sb.Append(emotes.Qstr(name)).Append(' ');
-            }
+            if (emotes.ContainsKey(name)) sb.Append(emotes.Qstr(name)).Append(' ');
             switch (name)
             {
                 case "copper":
-                    sb.Append($"Медь");
+                    sb.Append("Медь");
                     break;
                 case "lead":
                     sb.Append("Свинец");
@@ -306,7 +293,7 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
                     sb.Append("Песок");
                     break;
                 case "coal":
-                    sb.Append("Уголь");// ???
+                    sb.Append("Уголь"); // ???
                     break;
                 case "titanium":
                     sb.Append("Титан");
@@ -333,11 +320,11 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
                     break;
                 case "spore-pod":
                 case "sporePod":
-                    sb.Append("Споровой стручок");// ???
+                    sb.Append("Споровой стручок"); // ???
                     break;
                 case "blast-compound":
                 case "blastCompound":
-                    sb.Append("Взрывчатая смесь");// ???
+                    sb.Append("Взрывчатая смесь"); // ???
                     break;
                 case "pyratite":
                     sb.Append("Пиратит");
@@ -356,24 +343,24 @@ public class MindustryModule(BotDatabase db/*, DiscordSocketClient client*/, Htt
                     break;
                 case "fissile-matter":
                 case "fissileMatter":
-                    sb.Append("fissile-matter");// ???
+                    sb.Append("fissile-matter"); // ???
                     break;
                 case "dormant-cyst":
                 case "dormantCyst":
-                    sb.Append("dormant-cyst");// ???
+                    sb.Append("dormant-cyst"); // ???
                     break;
                 default:
                     sb.Append("oh-no");
                     break;
             }
-            
+
             sb.Append(": ");
             sb.Append(count);
             i++;
             if (i != dictionary.Count)
                 sb.Append(", ");
         }
-        
+
         return sb.ToString();
     }
 }

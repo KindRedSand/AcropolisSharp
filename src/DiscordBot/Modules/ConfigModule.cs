@@ -1,25 +1,26 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using DiscordBot.Database;
 using Hjson;
 
 namespace DiscordBot.Modules;
 
 [CommandContextType(InteractionContextType.Guild)]
-public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : InteractionModuleBase<SocketInteractionContext>
+public class ConfigModule(BotDatabase db /*, DiscordSocketClient client*/)
+    : InteractionModuleBase<SocketInteractionContext>
 {
     static ConfigModule()
     {
         EmbedColor = new Color(255, 211, 127);
     }
+
     public static Color EmbedColor { get; private set; }
-    
+
     [SlashCommand("cfg-log-channel", "Set specific channel for logging", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public async Task SetLogChannel(ITextChannel channel)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
         cfg.LogChannel = channel.Id;
         db.Update(cfg);
@@ -35,12 +36,12 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
                 break;
         }
     }
-    
+
     [SlashCommand("cfg-map-channel", "Set specific channel map posting", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public async Task SetMapChannel(ITextChannel channel)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
         cfg.MapChannel = channel.Id;
         db.Update(cfg);
@@ -56,13 +57,13 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
                 break;
         }
     }
-    
-    
+
+
     [SlashCommand("cfg-schemas-channel", "Set specific channel map posting", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public async Task SetSchematicChannel(ITextChannel channel)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
         cfg.SchematicChannel = channel.Id;
         db.Update(cfg);
@@ -78,18 +79,18 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
                 break;
         }
     }
-    
-    
+
+
     [SlashCommand("cfg-no-media", "Set No Media role", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public async Task SetNoMediaRole(IRole role)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
         cfg.NoMediaRoleId = role.Id;
         db.Update(cfg);
         await db.SaveChangesAsync();
-        
+
         switch (Context.Interaction.UserLocale)
         {
             case "ru":
@@ -100,8 +101,8 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
                 break;
         }
     }
-    
-    
+
+
     [SlashCommand("cfg-items-emotes", "Set schematic price emotes", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public async Task SetItemEmotes(string copper, string lead, string metaglass,
@@ -109,7 +110,7 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
         string silicon, string plastanium, string phaseFabric, string surgeAlloy,
         string beryllium, string tungsten, string oxide, string carbide)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
 
         var json = new JsonObject();
@@ -128,11 +129,11 @@ public class ConfigModule(BotDatabase db/*, DiscordSocketClient client*/) : Inte
         json.Add(new KeyValuePair<string, JsonValue>("tungsten", tungsten));
         json.Add(new KeyValuePair<string, JsonValue>("oxide", oxide));
         json.Add(new KeyValuePair<string, JsonValue>("carbide", carbide));
-        
+
         cfg.ItemsEmoticons = json.ToString();
         db.Update(cfg);
         await db.SaveChangesAsync();
-        
-        await FollowupAsync($"Emotes updated", ephemeral: true);
+
+        await FollowupAsync("Emotes updated", ephemeral: true);
     }
 }

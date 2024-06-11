@@ -5,29 +5,29 @@ namespace DiscordBot.Database;
 public class MessageModel
 {
     /// <summary>
-    /// Discord message ID
+    ///     Discord message ID
     /// </summary>
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public ulong Id { get; set; }
 
     /// <summary>
-    /// Sender User ID
+    ///     Sender User ID
     /// </summary>
     public ulong UserID { get; set; }
 
     /// <summary>
-    /// The guild ID where this message was send
+    ///     The guild ID where this message was send
     /// </summary>
     public ulong GuildID { get; set; }
-    
+
     /// <summary>
-    /// The guild channel ID where this message was send
+    ///     The guild channel ID where this message was send
     /// </summary>
     public ulong ChannelID { get; set; }
 
 
     /// <summary>
-    /// Message text
+    ///     Message text
     /// </summary>
     public string? Content { get; set; }
 
