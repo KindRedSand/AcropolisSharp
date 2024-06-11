@@ -14,11 +14,13 @@
         <UseSystemResourceKeys>true</UseSystemResourceKeys>
 
         <PublishTrimmed>true</PublishTrimmed>
-        <TrimMode>full</TrimMode>
+		<PublishSingleFile>true</PublishSingleFile>
+		
+        <TrimMode>partial</TrimMode>
 
         <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
-        <PlatformTarget>x64</PlatformTarget>
+        <!--PlatformTarget>x64</PlatformTarget-->
     </PropertyGroup>
 
     <ItemGroup>

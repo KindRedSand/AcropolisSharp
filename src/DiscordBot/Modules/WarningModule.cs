@@ -14,7 +14,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task WarnUser(IGuildUser user, string reason)
     {
-        await DeferAsync(false);
+        await DeferAsync();
         var warning = new WarningModel
         {
             Summary = reason,
@@ -77,7 +77,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                              """
                         ).Build());
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 if(channel != null)
                     await channel.SendMessageAsync(embed: new EmbedBuilder()
@@ -97,7 +97,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task NoMedia(IGuildUser user)
     {
-        await DeferAsync(false);
+        await DeferAsync();
 
         var config = await db.GetNonTrackedConfig(Context.Guild.Id);
         if (config?.NoMediaRoleId == null)
@@ -167,7 +167,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task UnWarnUser(IGuildUser user)
     {
-        await DeferAsync(false);
+        await DeferAsync();
         var warning = await db.Warnings.OrderBy(x => x.IssueTime)
             .LastOrDefaultAsync(x => x.GuildID == Context.Guild.Id && x.UserID == user.Id);
 
@@ -303,7 +303,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
     public async Task Warnings(IGuildUser user)
     {
-        await DeferAsync(false);
+        await DeferAsync();
 
         var warnings = (await db.GetUserWarnings(Context.Guild.Id, user.Id)).ToImmutableArray();
 
