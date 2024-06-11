@@ -320,7 +320,7 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
                     break;
                 case "spore-pod":
                 case "sporePod":
-                    sb.Append("Споровой стручок"); // ???
+                    sb.Append("Споровый стручок"); // ???
                     break;
                 case "blast-compound":
                 case "blastCompound":
