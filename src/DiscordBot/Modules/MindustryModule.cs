@@ -235,7 +235,7 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
                     await FollowupAsync(embed: emb.Build(), ephemeral: true);
                     break;
                 default:
-                    emb.WithTitle($"Your ьфз published in <#{config.MapChannel}> chanel");
+                    emb.WithTitle($"Your map published in <#{config.MapChannel}> chanel");
                     await FollowupAsync(embed: emb.Build(), ephemeral: true);
                     break;
             }
