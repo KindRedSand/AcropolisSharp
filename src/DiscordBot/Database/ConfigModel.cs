@@ -8,7 +8,7 @@ public class ConfigModel
     ///     Guild ID
     /// </summary>
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public ulong Id { get; set; }
+    public ulong Id { get; init; }
 
     /// <summary>
     ///     Log channel

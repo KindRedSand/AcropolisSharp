@@ -1,13 +1,12 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Hjson;
 
 namespace DiscordBot.Modules;
 
 [CommandContextType(InteractionContextType.Guild)]
 [RequireUserPermission(ChannelPermission.ManageChannels)]
-public class TextModule(DiscordSocketClient client) : InteractionModuleBase<SocketInteractionContext>
+public class TextModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const string _exampleEmbedPayload =
         """
