@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
@@ -14,8 +15,10 @@ using Playground.Mindustry.Blocks;
 
 //Host independent culture
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+var inviteRegex = new Regex(@"(discord\.gg\/.{4,10})");
 
-var messages = new MessageModel[1000];
+
+var messages = new MessageModel?[1000];
 var messagesIndex = 0;
 
 
@@ -201,49 +204,50 @@ async Task OnMessage(SocketMessage msg)
         msg.Channel is not SocketGuildChannel channel)
         return;
 
+    var filtered = false;
     if (msg is SocketUserMessage umsg)
     {
-        var argPos = 0;
-
-        if (umsg.Content.Trim()
-            .StartsWith(client.CurrentUser.Mention)) //.HasMentionPrefix(client.CurrentUser, ref argPos))
-            // var context = new SocketCommandContext(client, umsg);
-            // var res = await commands.ExecuteAsync(context: context, argPos: argPos, services: null);
-            if (msg.Author is SocketGuildUser user)
-            {
-                var emb = new EmbedBuilder()
-                    .WithColor(ConfigModule.EmbedColor)
-                    .WithTitle("Помощь | Список доступных команд")
-                    .WithFooter("Это временное сообщение, иcчезающее через 30 секунд");
-                var sb = new StringBuilder();
-                foreach (var cmd in globalCommands)
+        filtered = await filterInvites(umsg);
+        if(!filtered)
+        {
+            if (umsg.Content.Trim()
+                .StartsWith(client.CurrentUser.Mention))
+                if (msg.Author is SocketGuildUser user)
                 {
-                    if (cmd.Name == "wrn") // Skip this alias
-                        continue;
+                    var emb = new EmbedBuilder()
+                        .WithColor(ConfigModule.EmbedColor)
+                        .WithTitle("Помощь | Список доступных команд")
+                        .WithFooter("Это временное сообщение, иcчезающее через 30 секунд");
+                    var sb = new StringBuilder();
+                    foreach (var cmd in globalCommands!)
+                    {
+                        if (cmd.Name == "wrn") // Skip this alias
+                            continue;
 
-                    if (cmd.DefaultMemberPermissions.RawValue == 0 ||
-                        (cmd.DefaultMemberPermissions.RawValue & user.GuildPermissions.RawValue) > 0ul)
-                        sb.Append($"</{cmd.Name}:{cmd.Id}> - {cmd.Description}\n");
+                        if (cmd.DefaultMemberPermissions.RawValue == 0 ||
+                            (cmd.DefaultMemberPermissions.RawValue & user.GuildPermissions.RawValue) > 0ul)
+                            sb.Append($"</{cmd.Name}:{cmd.Id}> - {cmd.Description}\n");
+                    }
+
+                    var field = new EmbedFieldBuilder()
+                        .WithName("Нажмите на команду, чтобы воспользоваться ей")
+                        .WithValue(sb.ToString());
+                    emb.WithFields(field);
+                    var rest = await msg.Channel.SendMessageAsync(embed: emb.Build());
+                    _ = Task.Run(() =>
+                    {
+                        Thread.Sleep(TimeSpan.FromSeconds(30));
+                        try
+                        {
+                            rest.DeleteAsync();
+                        }
+                        catch (Exception)
+                        {
+                            // In case someone delete this message before us
+                        }
+                    });
                 }
-
-                var field = new EmbedFieldBuilder()
-                    .WithName("Нажмите на команду, чтобы воспользоваться ей")
-                    .WithValue(sb.ToString());
-                emb.WithFields(field);
-                var rest = await msg.Channel.SendMessageAsync(embed: emb.Build());
-                _ = Task.Run(() =>
-                {
-                    Thread.Sleep(TimeSpan.FromSeconds(30));
-                    try
-                    {
-                        rest.DeleteAsync();
-                    }
-                    catch (Exception _)
-                    {
-                        // In case someone delete this message before us
-                    }
-                });
-            }
+        }
     }
 
     var messageModel = new MessageModel
@@ -257,8 +261,11 @@ async Task OnMessage(SocketMessage msg)
         LogTime = DateTime.UtcNow
     };
 
-    messages[messagesIndex++] = messageModel;
-    messagesIndex %= messages.Length;
+    if (!filtered)
+    {
+        messages[messagesIndex++] = messageModel;
+        messagesIndex %= messages.Length;
+    }
 }
 
 async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMessageChannel ichannel)
@@ -362,6 +369,49 @@ async Task OnDelete(Cacheable<IMessage, ulong> cache, Cacheable<IMessageChannel,
     }
 }
 
+async Task<bool> filterInvites(SocketUserMessage msg)
+{
+    var usr = msg.Author as SocketGuildUser;
+    
+    //Allow admins and mods to post links  
+    if (usr!.GuildPermissions.Has(GuildPermission.ManageMessages))
+        return false;
+    
+    var channel = msg.Channel as SocketGuildChannel;
+    var match = inviteRegex.Match(msg.Content);
+    if (match.Success)
+    {
+        try
+        {
+            await msg.DeleteAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to delete message with invite in channel {channel!.Name}:\n{e.Message}");
+            return false;
+        }
+        var config = await db.GetNonTrackedConfig(channel!.Guild.Id);
+        if (config?.LogChannel == null)
+            return true;
+        if (await client.GetChannelAsync(config.LogChannel.Value) is SocketTextChannel logChannel)
+        {
+            var emb = new EmbedBuilder();
+            var sb = new StringBuilder();
+
+            emb.WithAuthor(usr)
+                .WithColor(ConfigModule.EmbedColor)
+                .WithTitle($"Сообщение в канале <#{channel.Id}> было удалено т.к. содержало инвайт:");
+
+            sb.Append(msg.Content);
+
+            emb.WithDescription(sb.ToString());
+
+            await logChannel.SendMessageAsync(embed: emb.Build());
+        }
+        return true;
+    }
+    return false;
+}
 #endregion
 
 Task Log(LogMessage msg)
