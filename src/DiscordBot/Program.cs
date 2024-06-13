@@ -52,7 +52,7 @@ var client = new DiscordSocketClient(new DiscordSocketConfig
 
 var commands = new CommandService();
 var interaction = new InteractionService(client);
-IReadOnlyCollection<RestGlobalCommand> globalCommands = null;
+IReadOnlyCollection<RestGlobalCommand> globalCommands = null!;
 interaction.Log += Log;
 
 
@@ -275,7 +275,7 @@ async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMe
         return;
 
     var messageModel =
-        messages.FirstOrDefault(x => x.Id == msg.Id);
+        messages.FirstOrDefault(x => x?.Id == msg.Id);
 
     if (messageModel == null)
     {
