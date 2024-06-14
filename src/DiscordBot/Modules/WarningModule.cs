@@ -79,12 +79,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             {
                 emb.Description = $"""
                                    Модератором {Context.User.Mention} было выдано предупреждение пользователю {user.Mention}
-                                   Причина: {reason}
-                                   Ссылка: {warning.WarningUrl}
                                    
                                    У пользователя {(warningsCount > 1 ? "уже " : string.Empty)}{LocaleHelper.Warnings(warningsCount)}!{(warningsCount > 1 ? $"\nАвтоматически выдан тайм-аут на 1 {(warningsCount == 2 ? "час" : "день")}" : string.Empty)}
-
-                                   {emb.Description}
                                    """;
                 await channel.SendMessageAsync(embed: emb.Build());
             }
@@ -95,13 +91,9 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             {
                 emb.Description = $"""
                                    Модератором {Context.User.Mention} было выдано предупреждение пользователю {user.Mention}
-                                   Причина: {reason}
-                                   Ссылка: {warning.WarningUrl}
                                    
                                    У пользователя {(warningsCount > 1 ? "уже " : string.Empty)}{warningsCount} предупреждений!
                                    У бота недостаточно прав на выдачу тайм-аута, выдано только предупреждение
-
-                                   {emb.Description}
                                    """;
                 await channel.SendMessageAsync(embed: emb.Build());
             }
@@ -317,7 +309,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                         fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i + 1}")
                             .WithValue(
                                  $"""
-                                 Выдана: {mod.Mention}
+                                 Выдано: {mod.Mention}
                                  Причина: {warnings[i].Summary}
                                  Ссылка: {warnings[i].WarningUrl}
                                  Истекает <t:{warnings[i].ExpireTime}:R> 
