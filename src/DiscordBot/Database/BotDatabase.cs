@@ -19,7 +19,7 @@ public class BotDatabase : DbContext
             "SchematicChannel" INTEGER NULL,
             "MapChannel" INTEGER NULL,
             "NoMediaRoleId" INTEGER NULL,
-            "BanThreshold" INTEGER NULL,
+            "WarningLogChannel" INTEGER NULL,
             "ItemsEmoticons" TEXT NOT NULL
         );
 

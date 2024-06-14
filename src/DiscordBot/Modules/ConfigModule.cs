@@ -18,21 +18,30 @@ public class ConfigModule(BotDatabase db /*, DiscordSocketClient client*/)
 
     [SlashCommand("cfg-log-channel", "Set specific channel for logging", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    public async Task SetLogChannel(ITextChannel channel)
+    public async Task SetLogChannel(ITextChannel messageLog, ITextChannel warningLog)
     {
         await DeferAsync(true);
         var cfg = await db.GetOrCreateConfig(Context.Guild.Id);
-        cfg.LogChannel = channel.Id;
+        cfg.LogChannel = messageLog.Id;
+        cfg.WarningLogChannel = warningLog.Id;
         db.Update(cfg);
         await db.SaveChangesAsync();
 
         switch (Context.Interaction.UserLocale)
         {
             case "ru":
-                await FollowupAsync($"Канал <#{channel.Id}> будет ипользоваться для логов", ephemeral: true);
+                await FollowupAsync(
+                    $"""
+                     Канал <#{messageLog.Id}> будет ипользоваться для логов измененных/удаленных сообщений
+                     Канал <#{warningLog.Id}> будет ипользоваться для логов варнов
+                     """, ephemeral: true);
                 break;
             default:
-                await FollowupAsync($"You set channel <#{channel.Id}> as log channel", ephemeral: true);
+                await FollowupAsync(
+                    $"""
+                     You set channel <#{messageLog.Id}> as message log channel
+                     You set channel <#{warningLog.Id}> as warnings log channel
+                     """, ephemeral: true);
                 break;
         }
     }

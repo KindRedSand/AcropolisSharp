@@ -14,6 +14,11 @@ public class ConfigModel
     ///     Log channel
     /// </summary>
     public ulong? LogChannel { get; set; }
+    
+    /// <summary>
+    ///     Log channel for warnings
+    /// </summary>
+    public ulong? WarningLogChannel { get; set; }
 
     /// <summary>
     ///     Channel where to post schematics
@@ -29,11 +34,6 @@ public class ConfigModel
     ///     No media role ID
     /// </summary>
     public ulong? NoMediaRoleId { get; set; }
-
-    /// <summary>
-    ///     Warning ban threshold
-    /// </summary>
-    public ulong? BanThreshold { get; set; } = 4;
 
     /// <summary>
     ///     Items emoticons in json format
