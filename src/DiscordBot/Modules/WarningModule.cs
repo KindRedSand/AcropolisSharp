@@ -40,27 +40,14 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
         emb.WithAuthor(user)
             .WithColor(ConfigModule.EmbedColor);
         IUserMessage msg;
-        switch (Context.Interaction.UserLocale)
-        {
-            case "ru":
-                emb.WithDescription(
-                    $"""
-                    **Пользователь {user.Mention} предупрежден**
-                    Причина: {reason}
-                    Предупреждение #{warningsCount}
-                    """);
-                msg = await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                break;
-            default:
-                emb.WithDescription(
-                    $"""
-                     **User {user.Mention} warned**     
-                     $"Reason: {reason}
-                     $"Warning #{warningsCount}
-                     """);
-                msg = await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                break;
-        }
+        emb.WithDescription(
+            $"""
+             **Пользователь {user.Mention} предупрежден**
+             Причина: {reason}
+             Предупреждение #{warningsCount}
+             """);
+        msg = await FollowupAsync(embed: emb.Build(), ephemeral: false);
+                
 
         warning.WarningUrl = $"https://discord.com/channels/{Context.Guild.Id}/{Context.Channel.Id}/{msg.Id}";
 
@@ -130,17 +117,10 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             }
 
             await user.RemoveRoleAsync(config.NoMediaRoleId.Value);
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    emb.WithDescription($"С пользователя {user.Mention} снатя роль <@{config.NoMediaRoleId}>");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-                default:
-                    emb.WithDescription($"<@{config.NoMediaRoleId}> role was removed from {user.Mention}");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-            }
+           
+            emb.WithDescription($"С пользователя {user.Mention} снатя роль <@{config.NoMediaRoleId}>");
+            await FollowupAsync(embed: emb.Build(), ephemeral: false);
+            
             if (config?.WarningLogChannel != null)
             {
                 var channel = Context.Guild.GetTextChannel(config.WarningLogChannel.Value);
@@ -156,17 +136,10 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
         else
         {
             await user.AddRoleAsync(config.NoMediaRoleId.Value);
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    emb.WithDescription($"Пользователю {user.Mention} была выдана роль <@{config.NoMediaRoleId}>");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-                default:
-                    emb.WithDescription($"<@{config.NoMediaRoleId}> now have {user.Mention} role");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-            }
+         
+            emb.WithDescription($"Пользователю {user.Mention} была выдана роль <@{config.NoMediaRoleId}>");
+            await FollowupAsync(embed: emb.Build(), ephemeral: false);
+            
             if (config?.WarningLogChannel != null)
             {
                 var channel = Context.Guild.GetTextChannel(config.WarningLogChannel.Value);
@@ -206,17 +179,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
             .WithColor(ConfigModule.EmbedColor);
         if (warning == null)
         {
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    emb.WithDescription($"У пользователя {user.Mention} нет предупреждений");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-                default:
-                    emb.WithDescription($"User {user.Mention} don't have any warnings");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                    break;
-            }
+            emb.WithDescription($"У пользователя {user.Mention} нет предупреждений");
+            await FollowupAsync(embed: emb.Build(), ephemeral: false);
 
             return;
         }
@@ -224,17 +188,8 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
         db.Remove(warning);
         await db.SaveChangesAsync();
         
-        switch (Context.Interaction.UserLocale)
-        {
-            case "ru":
-                emb.WithDescription($"С пользователя {user.Mention} снято предупреждение");
-                await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                break;
-            default:
-                emb.WithDescription($"From user {user.Mention} removed one warning");
-                await FollowupAsync(embed: emb.Build(), ephemeral: false);
-                break;
-        }
+        emb.WithDescription($"С пользователя {user.Mention} снято предупреждение");
+        await FollowupAsync(embed: emb.Build(), ephemeral: false);
         
         if (user.TimedOutUntil != null)
         {
@@ -254,13 +209,6 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 await channel.SendMessageAsync(embed: emb.Build());
             }
         }
-    }
-
-
-    [SlashCommand("wrn", "Посмотреть предупреждения для фикса", runMode: RunMode.Async)]
-    public async Task mwr()
-    {
-        await MyWarnings();
     }
 
     [SlashCommand("my-warnings", "Посмотреть свои предупреждения", runMode: RunMode.Async)]
@@ -289,57 +237,34 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
 
         await FollowupAsync(embed: emb.Build(), ephemeral: false);
     }
-    
-    private async Task<EmbedBuilder> getUserWarningsEmbed(ulong guildId, IUser user, string userLocale, bool useMention = false)
+
+    private async Task<EmbedBuilder> getUserWarningsEmbed(ulong guildId, IUser user, string userLocale,
+        bool useMention = false)
     {
         var emb = new EmbedBuilder()
             .WithColor(ConfigModule.EmbedColor);
         var warnings = (await db.GetUserWarnings(guildId, user.Id)).ToImmutableArray();
         
-        switch (userLocale)
+        emb.WithDescription($"У {(useMention ? user.Mention : "вас")} {LocaleHelper.Warnings(warnings.Length)}");
+        if (warnings.Length > 0)
         {
-            case "ru":
-                emb.WithDescription($"У {(useMention ? user.Mention : "вас")} {LocaleHelper.Warnings(warnings.Length)}");
-                if (warnings.Length > 0)
-                {
-                    var fields = new EmbedFieldBuilder[warnings.Length];
-                    for (var i = 0; i < warnings.Length; i++)
-                    {
-                        var mod = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i + 1}")
-                            .WithValue(
-                                 $"""
-                                 Выдано: {mod.Mention}
-                                 Причина: {warnings[i].Summary}
-                                 Ссылка: {warnings[i].WarningUrl}
-                                 Истекает <t:{warnings[i].ExpireTime}:R> 
-                                 """)
-                            .WithIsInline(true);
-                    }
-                    emb.WithFields(fields);
-                }
-                return emb;
-            default:
-                emb.WithDescription($"{(useMention ? "User " + user.Mention : "You")} has {warnings.Length} warnings");
-                if (warnings.Length > 0)
-                {
-                    var fields = new EmbedFieldBuilder[warnings.Length];
-                    for (var i = 0; i < warnings.Length; i++)
-                    {
-                        var mod = await client.GetUserAsync(warnings[i].ModeratorId);
-                        fields[i] = new EmbedFieldBuilder().WithName($"Warning #{i + 1}")
-                            .WithValue(
-                                 $"""
-                                 Issued by: {mod.Mention}
-                                 Reason: {warnings[i].Summary}
-                                 Link: {warnings[i].WarningUrl}
-                                 Expire <t:{warnings[i].ExpireTime}:R>
-                                 """)
-                            .WithIsInline(true);
-                    }
-                    emb.WithFields(fields);
-                }
-                return emb;
+            var fields = new EmbedFieldBuilder[warnings.Length];
+            for (var i = 0; i < warnings.Length; i++)
+            {
+                var mod = await client.GetUserAsync(warnings[i].ModeratorId);
+                fields[i] = new EmbedFieldBuilder().WithName($"Предупреждение #{i + 1}")
+                    .WithValue(
+                        $"""
+                         Выдано: {mod.Mention}
+                         Причина: {warnings[i].Summary}
+                         Ссылка: {warnings[i].WarningUrl}
+                         Истекает <t:{warnings[i].ExpireTime}:R>
+                         """)
+                    .WithIsInline(true);
+            }
+
+            emb.WithFields(fields);
         }
+        return emb;
     }
 }

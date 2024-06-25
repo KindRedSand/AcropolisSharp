@@ -41,6 +41,9 @@
         <None Update="init.sql">
             <CopyToOutputDirectory>Never</CopyToOutputDirectory>
         </None>
+        <None Update="convertOldWarnings.sql">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

@@ -63,16 +63,8 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
             }
             else
             {
-                switch (Context.Interaction.UserLocale)
-                {
-                    case "ru":
-                        await FollowupAsync("Вам нужно либо прикрепить файл схемы, либо импортированую строку",
-                            ephemeral: true);
-                        break;
-                    default:
-                        await FollowupAsync("You forget to specify arguments", ephemeral: true);
-                        break;
-                }
+                await FollowupAsync("Вам нужно либо прикрепить файл схемы, либо импортированую строку",
+                    ephemeral: true);
 
                 return;
             }
@@ -114,30 +106,14 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
             await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
 
             emb = new EmbedBuilder();
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    emb.WithTitle($"Схема была опубликована в <#{config.SchematicChannel}>");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: true);
-                    break;
-                default:
-                    emb.WithTitle($"Your schematic published in <#{config.SchematicChannel}> chanel");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: true);
-                    break;
-            }
+
+            emb.WithTitle($"Схема была опубликована в <#{config.SchematicChannel}>");
+            await FollowupAsync(embed: emb.Build(), ephemeral: true);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    await FollowupAsync("Во время обработки схемы произошла ошибка", ephemeral: true);
-                    break;
-                default:
-                    await FollowupAsync("Exception was risen while processing your schematic", ephemeral: true);
-                    break;
-            }
+            await FollowupAsync("Во время обработки схемы произошла ошибка", ephemeral: true);
         }
         finally
         {
@@ -162,34 +138,9 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
         MemoryStream? ms = null;
         try
         {
-            // if (file == null)
-            // {
-            //     switch (Context.Interaction.UserLocale)
-            //     {
-            //         case "ru":
-            //             await FollowupAsync("Вам нужно прикрепить файл карты!",
-            //                 ephemeral: true);
-            //             break;
-            //         default:
-            //             await FollowupAsync("You forget to specify arguments", ephemeral: true);
-            //             break;
-            //     }
-            //
-            //     return;
-            // }
-
             if (!file.Filename.EndsWith(".msav"))
             {
-                switch (Context.Interaction.UserLocale)
-                {
-                    case "ru":
-                        await FollowupAsync("Файл имеет неверный формат", ephemeral: true);
-                        break;
-                    default:
-                        await FollowupAsync("File has invalid format", ephemeral: true);
-                        break;
-                }
-
+                await FollowupAsync("Файл имеет неверный формат", ephemeral: true);
                 return;
             }
 
@@ -228,30 +179,16 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
             await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
 
             emb = new EmbedBuilder();
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    emb.WithTitle($"Карта была опубликована в <#{config.MapChannel}>");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: true);
-                    break;
-                default:
-                    emb.WithTitle($"Your map published in <#{config.MapChannel}> chanel");
-                    await FollowupAsync(embed: emb.Build(), ephemeral: true);
-                    break;
-            }
+            
+            emb.WithTitle($"Карта была опубликована в <#{config.MapChannel}>");
+            await FollowupAsync(embed: emb.Build(), ephemeral: true);
+
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            switch (Context.Interaction.UserLocale)
-            {
-                case "ru":
-                    await FollowupAsync("Во время обработки карты произошла ошибка", ephemeral: true);
-                    break;
-                default:
-                    await FollowupAsync("Exception was risen while processing your map", ephemeral: true);
-                    break;
-            }
+            await FollowupAsync("Во время обработки карты произошла ошибка", ephemeral: true);
+
         }
         finally
         {
