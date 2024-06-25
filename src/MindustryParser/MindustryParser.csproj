@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	
-    <PublishAot>True</PublishAot>
+    <PublishAot>false</PublishAot>
 	<OptimizationPreference>Size</OptimizationPreference>
 	<StackTraceSupport>false</StackTraceSupport>
 	<InvariantGlobalization>true</InvariantGlobalization>
