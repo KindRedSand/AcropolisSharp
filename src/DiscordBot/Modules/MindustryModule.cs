@@ -96,10 +96,12 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
             }
 
             var emb = new EmbedBuilder();
+            var desc = !scheme.tags.ContainsKey("description") ? formatPrice(prices, emotes) :
+                $"{scheme.tags["description"]}\n\n{formatPrice(prices, emotes)}";
             emb.WithAuthor(Context.User)
                 .WithTitle(scheme.tags["name"])
                 .WithColor(ConfigModule.EmbedColor)
-                .WithDescription(formatPrice(prices, emotes))
+                .WithDescription(desc)
                 .WithFooter($"{scheme.width}x{scheme.height} | UserID: {Context.User.Id}")
                 .WithImageUrl("attachment://preview.png");
 
@@ -207,7 +209,7 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
     private string formatPrice(Dictionary<string, int> dictionary, JsonObject emotes)
     {
         var sb = new StringBuilder();
-        sb.Append("Необходимые ресурсы:\n");
+        sb.Append("**Необходимые ресурсы:**\n");
         var i = 0;
         foreach ((string name, int count) in dictionary)
         {
