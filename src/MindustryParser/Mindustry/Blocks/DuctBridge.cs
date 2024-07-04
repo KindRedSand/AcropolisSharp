@@ -32,7 +32,7 @@ public class DuctBridge : Block
             {
                 var x = tile.x + point!.Value.X;
                 var y = tile.y + point!.Value.Y;
-                if(x < schem.width && y < schem.height)
+                if((x >= 0 && x < schem.width) && (y >= 0 && y < schem.height))
                 {
                     if (schem.Tiles[x, y]?.block?.name == BlockName)
                     {
