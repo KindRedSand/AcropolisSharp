@@ -277,7 +277,7 @@ namespace Playground.Mindustry.Blocks
                         };
                         break;
                     case "DuctRouter" or "DirectionalUnloader" or "OverflowDuct" or "StackRouter"
-                        or "PowerDiode" or "Drill"://Tbh this is hack, but it works
+                        or "PowerDiode" or "BeamDrill"://Tbh this is hack, but it works
                         b = new DuctRouter()
                         {
                             BlockId = id,

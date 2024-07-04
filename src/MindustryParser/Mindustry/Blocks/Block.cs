@@ -43,7 +43,7 @@ namespace Playground.Mindustry.Blocks
                 var b = Blocks.blocks[_tile.block.name];
                 return b.BlockType is "Junction" or "BufferedItemBridge" or "ItemBridge" or "Sorter" or
                     "Router" or "OverflowGate" or "MassDriver" or "Unloader" or 
-                    "Duct" or "DuctRouter" or "OverflowDuct";
+                    "DuctRouter" or "OverflowDuct" or "Drill" or "BeamDrill" or "BurstDrill" or "GenericCrafter";
             };
             
             var path = DllResource.GetAvailableResources()
@@ -105,17 +105,22 @@ namespace Playground.Mindustry.Blocks
         public virtual void RenderBlock(PixelAccessor<Rgba32> pixels, TileData tileData, Point renderPosition)
         {
             var imgs = GetRenderSprites();
-
-            var tileOffset = getTileOffset();
+            
             foreach (var img in imgs)
             {
-                for (int j = 0; j < Size; j++)
+                renderBlockRegion(pixels, img, renderPosition);
+            }
+        }
+
+        protected void renderBlockRegion(PixelAccessor<Rgba32> pixels, Image<Rgba32> region, Point renderPosition)
+        {
+            var tileOffset = getTileOffset();
+            for (int j = 0; j < Size; j++)
+            {
+                for (int i = 0; i < Size; i++)
                 {
-                    for (int i = 0; i < Size; i++)
-                    {
-                        pixels.RenderTile(new Point(renderPosition.X + i - tileOffset,
-                            renderPosition.Y - j + tileOffset), img, new Point(i, Size - j - 1));
-                    }
+                    pixels.RenderTile(new Point(renderPosition.X + i - tileOffset,
+                        renderPosition.Y - j + tileOffset), region, new Point(i, Size - j - 1));
                 }
             }
         }

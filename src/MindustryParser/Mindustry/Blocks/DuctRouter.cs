@@ -41,7 +41,7 @@ public class DuctRouter : Block
 
     public override void RenderBlock(PixelAccessor<Rgba32> pixels, TileData tileData, Point renderPosition)
     {
-        pixels.RenderTile(renderPosition, Regions[BlockName], Point.Empty);
+        renderBlockRegion(pixels, Regions[BlockName], renderPosition);
 
         //If filter is set - render filter region
         if (tileData.config is Content {type: ContentType.Item} content)
@@ -62,16 +62,16 @@ public class DuctRouter : Block
             switch (tileData.rotation)
             {
                 case 0:
-                    pixels.RenderTile(renderPosition, arrow_right, Point.Empty);
+                    renderBlockRegion(pixels, arrow_right, renderPosition);
                     return;
                 case 1:
-                    pixels.RenderTile(renderPosition, arrow_up, Point.Empty);
+                    renderBlockRegion(pixels, arrow_up, renderPosition);
                     return;
                 case 2:
-                    pixels.RenderTile(renderPosition, arrow_left, Point.Empty);
+                    renderBlockRegion(pixels, arrow_left, renderPosition);
                     return;
                 case 3:
-                    pixels.RenderTile(renderPosition, arrow_down, Point.Empty);
+                    renderBlockRegion(pixels, arrow_down, renderPosition);
                     return;
             }
         }
@@ -80,16 +80,16 @@ public class DuctRouter : Block
             switch (tileData.rotation)
             {
                 case 0:
-                    pixels.RenderTile(renderPosition, top_right, Point.Empty);
+                    renderBlockRegion(pixels, top_right, renderPosition);
                     return;
                 case 1:
-                    pixels.RenderTile(renderPosition, top_up, Point.Empty);
+                    renderBlockRegion(pixels, top_up, renderPosition);
                     return;
                 case 2:
-                    pixels.RenderTile(renderPosition, top_left, Point.Empty);
+                    renderBlockRegion(pixels, top_left, renderPosition);
                     return;
                 case 3:
-                    pixels.RenderTile(renderPosition, top_down, Point.Empty);
+                    renderBlockRegion(pixels, top_down, renderPosition);
                     return;
             }
         }
