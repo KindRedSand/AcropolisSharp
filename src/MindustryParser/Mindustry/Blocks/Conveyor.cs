@@ -140,31 +140,58 @@ namespace Playground.Mindustry.Blocks
             TileData? up = null, left = null, right = null, down = null;
             foreach (var t in schem.tiles)
             {
-                if (t.x == tile.x)
+                var b = Blocks.blocks[t.block.name];
+                var offset = b.getTileOffset();
+                var rect = new Rectangle(t.x - offset, t.y - offset, b.Size, b.Size);
+                
+                if (rect.Contains(tile.x, tile.y - 1))
                 {
-                    if (t.y + 1 == tile.y)
-                    {
-                        if (isConnectable(tile, t))
-                            down = t;
-                    }
-                    if (t.y - 1 == tile.y)
-                    {
-                        if (isConnectable(tile, t))
-                            up = t;
-                    }
-                }else if (t.y == tile.y)
-                {
-                    if (t.x + 1 == tile.x)
-                    {
-                        if (isConnectable(tile, t))
-                            left = t;
-                    }
-                    if (t.x - 1 == tile.x)
-                    {
-                        if (isConnectable(tile, t))
-                            right = t;
-                    }
+                    if (isConnectable(tile, t))
+                        down = t;
                 }
+                if (rect.Contains(tile.x, tile.y + 1))
+                {
+                    if (isConnectable(tile, t))
+                        up = t;
+                }
+                if (rect.Contains(tile.x - 1, tile.y))
+                {
+                    if (isConnectable(tile, t))
+                        left = t;
+                }
+                if (rect.Contains(tile.x + 1, tile.y))
+                {
+                    if (isConnectable(tile, t))
+                        right = t;
+                }
+                
+                
+                
+                // if (t.x == tile.x)
+                // {
+                //     if (t.y + 1 == tile.y)
+                //     {
+                //         if (isConnectable(tile, t))
+                //             down = t;
+                //     }
+                //     if (t.y - 1 == tile.y)
+                //     {
+                //         if (isConnectable(tile, t))
+                //             up = t;
+                //     }
+                // }else if (t.y == tile.y)
+                // {
+                //     if (t.x + 1 == tile.x)
+                //     {
+                //         if (isConnectable(tile, t))
+                //             left = t;
+                //     }
+                //     if (t.x - 1 == tile.x)
+                //     {
+                //         if (isConnectable(tile, t))
+                //             right = t;
+                //     }
+                // }
             }
 
             side = Sides.None;

@@ -275,33 +275,29 @@ public class Duct : Block
         TileData? up = null, left = null, right = null, down = null;
         foreach (var t in schem.tiles)
         {
-            if (t.x == tile.x)
+            var b = Blocks.blocks[t.block.name];
+            var offset = b.getTileOffset();
+            var rect = new Rectangle(t.x - offset, t.y - offset, b.Size, b.Size);
+                
+            if (rect.Contains(tile.x, tile.y - 1))
             {
-                if (t.y + 1 == tile.y)
-                {
-                    if (isConnectable(tile, t))
-                        down = t;
-                }
-
-                if (t.y - 1 == tile.y)
-                {
-                    if (isConnectable(tile, t))
-                        up = t;
-                }
+                if (isConnectable(tile, t))
+                    down = t;
             }
-            else if (t.y == tile.y)
+            if (rect.Contains(tile.x, tile.y + 1))
             {
-                if (t.x + 1 == tile.x)
-                {
-                    if (isConnectable(tile, t))
-                        left = t;
-                }
-
-                if (t.x - 1 == tile.x)
-                {
-                    if (isConnectable(tile, t))
-                        right = t;
-                }
+                if (isConnectable(tile, t))
+                    up = t;
+            }
+            if (rect.Contains(tile.x - 1, tile.y))
+            {
+                if (isConnectable(tile, t))
+                    left = t;
+            }
+            if (rect.Contains(tile.x + 1, tile.y))
+            {
+                if (isConnectable(tile, t))
+                    right = t;
             }
         }
 
@@ -359,7 +355,7 @@ public class Duct : Block
         if (BlockType != "ArmoredDuct" && DefaultDistributionOmnidir.Invoke(tile))
             return true;
 
-        if (b.BlockType is "Conveyor" or "ArmoredConveyor" or "Duct" or "ArmoredDuct")
+        if (b.BlockType is "Conveyor" or "ArmoredConveyor" or "Duct" or "ArmoredDuct" or "DuctBridge")
         {
             switch (tile.rotation)
             {
