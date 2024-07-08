@@ -127,6 +127,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 if (channel != null)
                 {
                     emb = new EmbedBuilder()
+                        .WithColor(ConfigModule.EmbedColor)
                         .WithAuthor(user)
                         .WithDescription($"Модератор {Context.User.Mention} __снял__ роль <@{config.NoMediaRoleId.Value}> с пользователя {user.Mention}");
                     await channel.SendMessageAsync(embed: emb.Build());
@@ -146,6 +147,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 if (channel != null)
                 {
                     emb = new EmbedBuilder()
+                        .WithColor(ConfigModule.EmbedColor)
                         .WithAuthor(user)
                         .WithDescription($"Модератор {Context.User.Mention} выдал роль <@{config.NoMediaRoleId.Value}> пользователю {user.Mention}");
                     await channel.SendMessageAsync(embed: emb.Build());
