@@ -165,6 +165,7 @@ async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageCha
             if (!ulong.TryParse(sid, out ulong id))
                 return;
             if (reaction.User.Value.Id == id) await msg.DeleteAsync();
+            else await msg.RemoveReactionAsync(reaction.Emote, reaction.UserId);
         }
     }
 }
