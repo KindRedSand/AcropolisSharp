@@ -65,7 +65,8 @@ namespace Playground.Mindustry.Blocks
 
         public Dictionary<string, Image<Rgba32>> Regions = new Dictionary<string, Image<Rgba32>>();
 
-        public Color shardedColor = Color.Parse("ffd37f");
+        //public Color shardedColor = Color.Parse("ffd27f");
+        public Color shardedColor = Color.Parse("ffffff");
 
         public virtual void LoadRegions()
         {
