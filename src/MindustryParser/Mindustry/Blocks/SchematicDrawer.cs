@@ -51,9 +51,16 @@ namespace Playground.Mindustry.Blocks
             {
                 foreach (var tile in scheme.tiles)
                 {
-                    var block = Blocks.blocks[tile.block.name];
-                    var pos = new Point(tile.x + 1, (scheme.height - tile.y));
-                    block.RenderShadow(pixels, tile, pos);
+                    try
+                    {
+                        var block = Blocks.blocks[tile.block.name];
+                        var pos = new Point(tile.x + 1, (scheme.height - tile.y));
+                        block.RenderShadow(pixels, tile, pos);
+                    }
+                    catch (Exception e)
+                    {
+                        // ignored
+                    }
                 }
             });
             
@@ -63,30 +70,54 @@ namespace Playground.Mindustry.Blocks
             {
                 foreach (var tile in scheme.tiles)
                 {
-                    var block = Blocks.blocks[tile.block.name];
-                    var pos = new Point(tile.x + 1, (scheme.height - tile.y));
-                    block.UpdateTiling(scheme, tile);
-                    block.RenderBlock(pixels, tile, pos);
+                    Block block = null;
+                    try
+                    {
+                        block = Blocks.blocks[tile.block.name];
+                        var pos = new Point(tile.x + 1, (scheme.height - tile.y));
+                        block.UpdateTiling(scheme, tile);
+                        block.RenderBlock(pixels, tile, pos);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(block != null
+                            ? $"Failed to render block {block.BlockName}"
+                            : $"Failed to retrieve block info for {tile.block.name}");
+                    }
                 }
             });
 
             foreach (var tile in scheme.tiles)
             {
-                var block = Blocks.blocks[tile.block.name];
+                try
+                {
+                    var block = Blocks.blocks[tile.block.name];
 
-                var pos = new Point(tile.x + 1, (scheme.height - tile.y));
-                block.UpdateTiling(scheme, tile);
-                block.PostRenderBlockDirect(image, tile, pos);
+                    var pos = new Point(tile.x + 1, (scheme.height - tile.y));
+                    block.UpdateTiling(scheme, tile);
+                    block.PostRenderBlockDirect(image, tile, pos);
+                }
+                catch (Exception e)
+                {
+                    // ignored
+                }
             }
 
             image.ProcessPixelRows(pixels =>
             {
                 foreach (var tile in scheme.tiles)
                 {
-                    var block = Blocks.blocks[tile.block.name];
-                    var pos = new Point(tile.x + 1, (scheme.height - tile.y));
-                    block.UpdateTiling(scheme, tile);
-                    block.PostRenderBlock(pixels, tile, pos);
+                    try
+                    {
+                        var block = Blocks.blocks[tile.block.name];
+                        var pos = new Point(tile.x + 1, (scheme.height - tile.y));
+                        block.UpdateTiling(scheme, tile);
+                        block.PostRenderBlock(pixels, tile, pos);
+                    }
+                    catch (Exception e)
+                    {
+                        // ignored
+                    }
                 }
             });
 
