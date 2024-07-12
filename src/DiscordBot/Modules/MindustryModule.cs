@@ -105,12 +105,14 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
                 .WithFooter($"{scheme.width}x{scheme.height} | UserID: {Context.User.Id}")
                 .WithImageUrl("attachment://preview.png");
 
-            await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
+            var msg = await channel.SendFilesAsync(attachments, embed: emb.Build());
 
             emb = new EmbedBuilder();
 
             emb.WithTitle($"Схема была опубликована в <#{config.SchematicChannel}>");
             await FollowupAsync(embed: emb.Build(), ephemeral: true);
+            
+            await addReactions(msg);
         }
         catch (Exception e)
         {
@@ -178,13 +180,14 @@ public class MindustryModule(BotDatabase db /*, DiscordSocketClient client*/, Ht
             if (ctx.Meta.tags.TryGetValue("description", out string? tag))
                 emb.WithDescription(tag);
 
-            await addReactions(await channel.SendFilesAsync(attachments, embed: emb.Build()));
+            var msg = await channel.SendFilesAsync(attachments, embed: emb.Build());
 
             emb = new EmbedBuilder();
             
             emb.WithTitle($"Карта была опубликована в <#{config.MapChannel}>");
             await FollowupAsync(embed: emb.Build(), ephemeral: true);
 
+            await addReactions(msg);
         }
         catch (Exception e)
         {
