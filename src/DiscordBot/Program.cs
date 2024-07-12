@@ -151,7 +151,7 @@ async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageCha
         return;
     var msg = reaction.Message.IsSpecified ? reaction.Message.Value : await reaction.Channel.GetMessageAsync(cmsg.Id);
     //Only check reactions on own messages
-    if (msg.Author.Id != client.CurrentUser.Id)
+    if (msg.Author.Id != client.CurrentUser.Id || reaction.UserId == client.CurrentUser.Id)
         return;
     if (reaction.Emote.Name != "\u274c")
         return;
