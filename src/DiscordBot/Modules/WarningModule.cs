@@ -118,7 +118,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
 
             await user.RemoveRoleAsync(config.NoMediaRoleId.Value);
            
-            emb.WithDescription($"С пользователя {user.Mention} снатя роль <@{config.NoMediaRoleId}>");
+            emb.WithDescription($"С пользователя {user.Mention} снята роль <@&{config.NoMediaRoleId}>");
             await FollowupAsync(embed: emb.Build(), ephemeral: false);
             
             if (config?.WarningLogChannel != null)
@@ -129,7 +129,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                     emb = new EmbedBuilder()
                         .WithColor(ConfigModule.EmbedColor)
                         .WithAuthor(user)
-                        .WithDescription($"Модератор {Context.User.Mention} __снял__ роль <@{config.NoMediaRoleId.Value}> с пользователя {user.Mention}");
+                        .WithDescription($"Модератор {Context.User.Mention} __снял__ роль <@&{config.NoMediaRoleId.Value}> с пользователя {user.Mention}");
                     await channel.SendMessageAsync(embed: emb.Build());
                 }
             }
@@ -138,7 +138,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
         {
             await user.AddRoleAsync(config.NoMediaRoleId.Value);
          
-            emb.WithDescription($"Пользователю {user.Mention} была выдана роль <@{config.NoMediaRoleId}>");
+            emb.WithDescription($"Пользователю {user.Mention} была выдана роль <@&{config.NoMediaRoleId}>");
             await FollowupAsync(embed: emb.Build(), ephemeral: false);
             
             if (config?.WarningLogChannel != null)
