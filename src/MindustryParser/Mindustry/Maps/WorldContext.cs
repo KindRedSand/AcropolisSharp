@@ -1,6 +1,8 @@
-﻿using Playground.Mindustry.Blocks;
+﻿using System.Collections.Immutable;
+using Playground.Mindustry.Blocks;
 using Playground.Mindustry.Saves;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Playground.Mindustry.Maps;
@@ -268,6 +270,9 @@ public class WorldContext
                 {
                     case ColorPattern.Team:
                     {
+                        
+                        if(((int)tile.team) > 256)
+                            continue;
                         r[x + i - offset] = teamColors[(int) tile.team];
                         renderShadows[Size.X * (y - offset + j) + (x - offset + i)] = ShadowState.Disallowed;
                         if (j == 0 && y - offset > 0)
@@ -329,15 +334,98 @@ public class WorldContext
         // }
         // return new Rgba32(0, 0, 0, 0);
     }
-    
-    private Rgba32[] teamColors = new[]
+
+    private static ImmutableArray<Rgba32> teamColors;
+
+    static WorldContext()
     {
-        Rgba32.ParseHex("4d4e58"),
-        Rgba32.ParseHex("ffd37f"),
-        Rgba32.ParseHex("f25555"),
-        Rgba32.ParseHex("a27ce5"),
-        Rgba32.ParseHex("54d67d"),
-        Rgba32.ParseHex("6c87fd"),
-        Rgba32.ParseHex("e05438"),
-    };
+        List<Rgba32> list = new(256);
+
+        list.Add(Rgba32.ParseHex("4d4e58"));
+        list.Add(Rgba32.ParseHex("ffd37f"));
+        list.Add(Rgba32.ParseHex("f25555"));
+        list.Add(Rgba32.ParseHex("a27ce5"));
+        list.Add(Rgba32.ParseHex("54d67d"));
+        list.Add(Rgba32.ParseHex("6c87fd"));
+        list.Add(Rgba32.ParseHex("e05438"));
+
+        var rand = new Random(8);
+
+        for (int i = 7; i < 256; i++)
+        {
+            var color = HSVToRgb((float)(360 * rand.NextDouble()),
+                (float)(100 * ((1 - 0.4) * rand.NextDouble() + 0.4)),
+                    (float)(100 * ((1 - 0.6) * rand.NextDouble() + 0.6)));
+            list.Add(color);
+        }
+        
+        teamColors = [..list];
+    }
+
+    //Source: https://stackoverflow.com/questions/3018313/algorithm-to-convert-rgb-to-hsv-and-hsv-to-rgb-in-range-0-255-for-both
+    private static Rgba32 HSVToRgb(double h, double s, double v)
+    {
+
+        double hh, p, q, t, ff;
+        long i;
+        Rgba32 output = new Rgba32()
+        {
+            A = 255,
+        };
+
+        if (s <= 0.0)
+        {
+            output.R = (byte) (v * 255);
+            output.G = (byte) (v * 255);
+            output.B = (byte) (v * 255);
+            return output;
+        }
+
+        hh = h;
+        if (hh >= 360.0) hh = 0.0;
+        hh /= 60.0;
+        i = (long) hh;
+        ff = hh - i;
+        p = v * (1.0 - s);
+        q = v * (1.0 - (s * ff));
+        t = v * (1.0 - (s * (1.0 - ff)));
+
+        switch (i)
+        {
+            case 0:
+                output.R = (byte) (v * 255);
+                output.G = (byte) (t * 255);
+                output.B = (byte) (p * 255);
+                break;
+            case 1:
+                output.R = (byte) (q * 255);
+                output.G = (byte) (v * 255);
+                output.B = (byte) (p * 255);
+                break;
+            case 2:
+                output.R = (byte) (p * 255);
+                output.G = (byte) (v * 255);
+                output.B = (byte) (t * 255);
+                break;
+
+            case 3:
+                output.R = (byte) (p * 255);
+                output.G = (byte) (q * 255);
+                output.B = (byte) (v * 255);
+                break;
+            case 4:
+                output.R = (byte) (t * 255);
+                output.G = (byte) (p * 255);
+                output.B = (byte) (v * 255);
+                break;
+            case 5:
+            default:
+                output.R = (byte) (v * 255);
+                output.G = (byte) (p * 255);
+                output.B = (byte) (q * 255);
+                break;
+        }
+
+        return output;
+    }
 }
