@@ -173,11 +173,11 @@ async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageCha
 //Reassign NoMedia role upon rejoin
 async Task OnUserJoin(SocketGuildUser user)
 {
-    var entry = await db.Warnings.AsNoTracking()
+    var entry = await db.NoMedia.AsNoTracking()
         .FirstOrDefaultAsync(x => x.GuildID == user.Guild.Id && x.UserID == user.Id);
     if (entry == null)
         return;
-
+    
     var config = await db.GetNonTrackedConfig(user.Guild.Id);
     if (config == null)
     {
