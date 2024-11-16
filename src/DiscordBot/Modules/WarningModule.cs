@@ -170,27 +170,34 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
 
     [SlashCommand("unwarn", "Убрать предупреждение", runMode: RunMode.Async)]
     [DefaultMemberPermissions(GuildPermission.BanMembers)]
-    public async Task UnWarnUser(IGuildUser user)
+    public async Task UnWarnUser(IGuildUser user, [MinValue(1), MaxValue(5)] int warnNumber = 1)
     {
         await DeferAsync();
-        var warning = await db.Warnings.OrderBy(x => x.IssueTime)
-            .LastOrDefaultAsync(x => x.GuildID == Context.Guild.Id && x.UserID == user.Id);
+        var warnings = db.Warnings.OrderBy(x => x.IssueTime)
+            .Where(x => x.GuildID == Context.Guild.Id && x.UserID == user.Id).ToImmutableArray();
 
         var emb = new EmbedBuilder();
         emb.WithAuthor(user)
             .WithColor(ConfigModule.EmbedColor);
-        if (warning == null)
+        
+        switch (warnings.Length)
         {
-            emb.WithDescription($"У пользователя {user.Mention} нет предупреждений");
-            await FollowupAsync(embed: emb.Build(), ephemeral: false);
-
-            return;
+            case 0:
+                emb.WithDescription($"У пользователя {user.Mention} нет предупреждений");
+                await FollowupAsync(embed: emb.Build(), ephemeral: false);
+                return;
+            case > 1 when warnNumber > warnings.Length:
+                emb.WithDescription($"У пользователя {user.Mention} нет предупреждения под номером {warnNumber}. Всего у него {warnings.Length} предупреждений");
+                await FollowupAsync(embed: emb.Build(), ephemeral: false);
+                return;
         }
+        
+        var warning = warnings[warnNumber - 1];
 
         db.Remove(warning);
         await db.SaveChangesAsync();
         
-        emb.WithDescription($"С пользователя {user.Mention} снято предупреждение");
+        emb.WithDescription($"С пользователя {user.Mention} снято предупреждение #{warnNumber}");
         await FollowupAsync(embed: emb.Build(), ephemeral: false);
         
         if (user.TimedOutUntil != null)
@@ -207,7 +214,7 @@ public class WarningModule(BotDatabase db, DiscordSocketClient client) : Interac
                 emb = new EmbedBuilder()
                     .WithColor(ConfigModule.EmbedColor)
                     .WithAuthor(user)
-                    .WithDescription($"Модератор {Context.User.Mention} снял с пользователя {user.Mention} предупреждение");
+                    .WithDescription($"Модератор {Context.User.Mention} снял с пользователя {user.Mention} предупреждение #{warnNumber}");
                 await channel.SendMessageAsync(embed: emb.Build());
             }
         }
