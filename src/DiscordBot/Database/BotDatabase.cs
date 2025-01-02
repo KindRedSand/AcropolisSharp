@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Discord.Rest;
+using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace DiscordBot.Database;
 
@@ -49,6 +51,36 @@ public class BotDatabase : DbContext
         COMMIT;
         """;
 
+    private const string _starboardMigration = 
+        """
+        CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+            "MigrationId" TEXT NOT NULL CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY,
+            "ProductVersion" TEXT NOT NULL
+        );
+    
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS "StarConfig" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_StarConfig" PRIMARY KEY,
+            "ChannelID" INTEGER NULL,
+            "ReactionsThreshold" INTEGER NULL
+        );
+        CREATE TABLE IF NOT EXISTS "StarMessage" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_StarMessage" PRIMARY KEY AUTOINCREMENT,
+            "UserID" INTEGER NOT NULL,
+            "GuildID" INTEGER NOT NULL,
+            "StarboardMessage" INTEGER,
+            "Content" TEXT,
+            "AttachmentUrl" TEXT,
+            "LastCount" INTEGER NOT NULL,
+            "OwnerReacted" BOOLEAN
+        );
+        INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+        VALUES ('20250110061803_starboard', '8.0.6');
+
+        COMMIT;
+        """;
+
     private readonly bool _isContextSet;
 
 
@@ -77,6 +109,9 @@ public class BotDatabase : DbContext
     public DbSet<WarningModel> Warnings { get; set; }
 
     public DbSet<NoMediaModel> NoMedia { get; set; }
+    
+    public DbSet<StarConfig> StarConfig { get; set; }
+    public DbSet<StarMessage> StarMessage { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -103,10 +138,34 @@ public class BotDatabase : DbContext
 
         return config;
     }
+    
+    public async Task<StarConfig> GetOrCreateStarConfig(ulong guildId)
+    {
+        var config = await StarConfig.FirstOrDefaultAsync(x => x.Id == guildId);
+        if (config == null)
+        {
+            config = new StarConfig()
+            {
+                Id = guildId
+            };
+            await StarConfig.AddAsync(config);
+            await SaveChangesAsync();
+
+            //Return tracked entity
+            return await StarConfig.FirstAsync(x => x.Id == guildId);
+        }
+
+        return config;
+    }
 
     public async Task<ConfigModel?> GetNonTrackedConfig(ulong guildId)
     {
         return await Config.AsNoTracking().FirstOrDefaultAsync(x => x.Id == guildId);
+    }
+    
+    public async Task<StarConfig?> GetNonTrackedStarConfig(ulong guildId)
+    {
+        return await StarConfig.AsNoTracking().FirstOrDefaultAsync(x => x.Id == guildId);
     }
 
     public async Task<IEnumerable<WarningModel>> GetUserWarnings(ulong guildId, ulong userId)
@@ -125,6 +184,25 @@ public class BotDatabase : DbContext
 
         return warningsList;
     }
+    
+    public async Task<(StarMessage, bool)> GetStarMessageEntry(ulong msgId, RestUserMessage msg)
+    {
+        var msgEntry = await StarMessage.FirstOrDefaultAsync(x => x.Id == msgId);
+        if (msgEntry != null) return (msgEntry, true);
+
+        msgEntry = new StarMessage()
+        {
+            Id = msgId,
+            UserID = msg.Author.Id,
+            Content = msg.Content,
+            //AttachmentUrl = msg.Attachments?.FirstOrDefault()?.Url,
+            GuildID = ((SocketGuildChannel)(msg.Channel)).Guild.Id,
+            LastCount = 0,
+            StarboardMessage = null,
+        };
+        //await AddAsync(msgEntry);
+        return (msgEntry, false);
+    }
 
 
     internal async Task ApplyMigrations()
@@ -133,6 +211,16 @@ public class BotDatabase : DbContext
         {
             Console.Write("Seems like db doesn't exist or configured. Execute initial migration... ");
             await Database.ExecuteSqlRawAsync(_initialCommit);
+            await Database.ExecuteSqlRawAsync(_starboardMigration);
+            await SaveChangesAsync();
+            Console.WriteLine("Done!");
+            return;
+        }
+
+        if ((await Database.GetAppliedMigrationsAsync()).All(x => x != "20250110061803_starboard"))
+        {
+            Console.Write("Seems like db doesn't have starboard migration. Execute migration... ");
+            await Database.ExecuteSqlRawAsync(_starboardMigration);
             await SaveChangesAsync();
             Console.WriteLine("Done!");
         }

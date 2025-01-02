@@ -85,6 +85,7 @@ client.MessageReceived += OnMessage;
 client.MessageUpdated += OnEdit;
 client.MessageDeleted += OnDelete;
 client.ReactionAdded += OnReaction;
+client.ReactionRemoved += OnReactionRemoved;
 client.UserJoined += OnUserJoin;
 client.Log += Log;
 
@@ -149,13 +150,72 @@ async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageCha
 {
     if (!reaction.User.IsSpecified)
         return;
-    var msg = reaction.Message.IsSpecified ? reaction.Message.Value : await reaction.Channel.GetMessageAsync(cmsg.Id);
+    var msg = (RestUserMessage)(reaction.Message.IsSpecified ? reaction.Message.Value : await reaction.Channel.GetMessageAsync(cmsg.Id));
+    
+    switch (reaction.Emote.Name)
+    {
+        case "\u274c":
+            await OnMapDeletion(msg, reaction);
+            return;
+        case "\u2b50":
+            await OnStar(msg, reaction);
+            break;
+    }
+}
+
+async Task OnReactionRemoved(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageChannel, ulong> cchannel,
+    SocketReaction reaction)
+{
+    if (reaction.Channel is not SocketGuildChannel gchan)
+        return;
+    
+    if (reaction.Emote.Name == "\u2b50")
+    {
+        if (!reaction.User.IsSpecified)
+            return;
+        var msg = (RestUserMessage)(reaction.Message.IsSpecified ? reaction.Message.Value : await reaction.Channel.GetMessageAsync(cmsg.Id));
+        
+        var rCount =  msg.Reactions.FirstOrDefault(x => x.Key.Name == "\u2b50").Value.ReactionCount;
+        
+
+        var cfg = await db.GetNonTrackedStarConfig(gchan.Guild.Id);
+        if (cfg?.ChannelID is null)
+            return;
+        
+        var msgEntry = await db.StarMessage.FirstOrDefaultAsync(x => x.Id == msg.Id);
+        if (msgEntry == null || msgEntry.LastCount == rCount || msgEntry.StarboardMessage == null)
+            return;
+
+        if (msg.Author.Id == reaction.UserId)
+            msgEntry.OwnerReacted = false;
+
+        if (msgEntry.OwnerReacted)
+            rCount -= 1;
+        
+        msgEntry.LastCount = rCount;
+    
+        //Here are no way we can have ChannelID as null, but Roslyn still complain
+        var starboardCh = ((IMessageChannel) client.GetChannel(cfg.ChannelID ?? 0));
+        
+        if (rCount <= Math.Max(cfg.ReactionsThreshold - 4, 0))
+        {
+            if(msgEntry.StarboardMessage != null && msgEntry.StarboardMessage != 0)
+                await starboardCh.DeleteMessageAsync(msgEntry.StarboardMessage ?? 0);
+            msgEntry.StarboardMessage = null;
+            //Force update cache
+            db.StarMessage.Update(msgEntry);
+            db.SaveChanges();
+            return;
+        }
+    }
+}
+
+async Task OnMapDeletion(RestUserMessage msg, SocketReaction reaction)
+{
     //Only check reactions on own messages
     if (msg.Author.Id != client.CurrentUser.Id || reaction.UserId == client.CurrentUser.Id)
         return;
-    if (reaction.Emote.Name != "\u274c")
-        return;
-
+    
     if (msg.Embeds.Count > 0)
     {
         var emb = msg.Embeds.First();
@@ -168,6 +228,123 @@ async Task OnReaction(Cacheable<IUserMessage, ulong> cmsg, Cacheable<IMessageCha
             else await msg.RemoveReactionAsync(reaction.Emote, reaction.UserId);
         }
     }
+}
+
+async Task OnStar(RestUserMessage msg, SocketReaction reaction)
+{
+    if (msg.Author.Id == client.CurrentUser.Id /*|| msg.Author.Id == reaction.UserId*/)
+        return;
+    if (msg.Channel is not SocketGuildChannel gchan)
+        return;
+    
+    var rCount =  msg.Reactions.FirstOrDefault(x => x.Key.Name == "\u2b50").Value.ReactionCount;
+    
+    var cfg = await db.GetNonTrackedStarConfig(gchan.Guild.Id);
+    if (cfg?.ChannelID is null)
+        return;
+    
+    var (msgEntry, exist) = await db.GetStarMessageEntry(msg.Id, msg);
+    
+    if (msgEntry.LastCount == rCount)
+        return;
+    
+    if (msg.Author.Id == reaction.UserId)
+        msgEntry.OwnerReacted = true;
+
+    if (msgEntry.OwnerReacted)
+        rCount -= 1;
+    
+    msgEntry.LastCount = rCount;
+    
+    //Here are no way we can have ChannelID as null, but Roslyn still complain
+    var starboardCh = ((IMessageChannel) client.GetChannel(cfg.ChannelID ?? 0));
+
+    //We reached threshold and we don't have printed msg
+    if (msgEntry.StarboardMessage is null && rCount >= cfg.ReactionsThreshold)
+    {
+        var emb = new EmbedBuilder().WithAuthor(msg.Author).WithColor(Color.LightOrange)
+            .WithDescription(msg.Content);
+
+        // if (!string.IsNullOrEmpty(msgEntry.AttachmentUrl))
+        //     emb = emb.WithImageUrl(msgEntry.AttachmentUrl);
+        if (msg.Attachments.Count > 0)
+        {
+            foreach (var attachment in msg.Attachments.Where(x => x.ContentType.StartsWith("image/") || x.ContentType.StartsWith("video/")))
+            {
+                emb = emb.WithImageUrl(attachment.Url);
+                if(attachment.ContentType.StartsWith("image/"))
+                    emb = emb.WithImageUrl(attachment.Url);
+                if (attachment.ContentType.StartsWith("video/"))
+                    emb = emb.AddField("Video", attachment.Url);
+            }
+        }
+        if (msg.Embeds.Count > 0)
+        {
+            foreach (var embed in msg.Embeds.Where(x => x.Type is EmbedType.Image or EmbedType.Video))
+            {
+                if(embed.Image.HasValue)
+                    emb = emb.WithImageUrl(embed.Image.Value.Url);
+                if (embed.Video.HasValue)
+                    emb = emb.AddField("Video", embed.Video.Value.Url);
+            }
+        }
+        //We can rely on discord embeds here 
+        // if (msg.Content.StartsWith("https://"))
+        // {
+        //     try
+        //     {
+        //         //Weird way to validate this, but atm i already have headache
+        //         var uri = new Uri(msg.Content);
+        //         emb = emb.WithImageUrl(msg.Content);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         // ignored
+        //     }
+        // }
+        
+        var r = await starboardCh.SendMessageAsync($"{rCount} \u2b50 {msg.GetJumpUrl()}",embed: emb.Build());
+        msgEntry.StarboardMessage = r.Id;
+
+        if (!exist)
+            await db.AddAsync(msgEntry);
+        else
+            db.Update(msgEntry);
+        await db.SaveChangesAsync();
+        return;
+    }
+
+    try
+    {
+        if (rCount <= Math.Max(cfg.ReactionsThreshold - 4, 0))
+        {
+            if(msgEntry.StarboardMessage != null && msgEntry.StarboardMessage != 0)
+                await starboardCh.DeleteMessageAsync(msgEntry.StarboardMessage ?? 0);
+            
+            msgEntry.StarboardMessage = null;
+            
+            //Force update cache
+            if (!exist)
+                await db.AddAsync(msgEntry);
+            else
+                db.Update(msgEntry);
+            await db.SaveChangesAsync();
+            return;
+        }
+        if(msgEntry.StarboardMessage is null or 0)
+            return;
+
+        var rest = (RestUserMessage)await starboardCh.GetMessageAsync(msgEntry.StarboardMessage ?? 0);
+        await rest.ModifyAsync(x => x.Content = $"{rCount} \u2b50 {msg.GetJumpUrl()}");
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine( new LogMessage(LogSeverity.Error, "Reactions", "It appears what or starboard channel are changed, or original message get deleted." +
+                                                                          " This entry will be purged from the database", e));
+        db.StarMessage.Remove(msgEntry);
+        await db.SaveChangesAsync();
+    }
+    await db.SaveChangesAsync();
 }
 
 //Reassign NoMedia role upon rejoin
