@@ -80,7 +80,7 @@ namespace Playground.Mindustry.Blocks
             
             foreach (Match match in matches)
             {
-                if(match.Groups["type"].Value is "AirBlock" or "SpawnBlock" or "Cliff" //Skip this one since we already added them to list
+                if(match.Groups["type"].Value is "AirBlock" or "SpawnBlock" or "Cliff" or "RemoveWall" or "RemoveOre" //Skip this one since we already added them to list
                    or "DirectionalForceProjector")//Disabled 
                     continue;
                 //var data = GetDataRegex().Match(match.Value);
@@ -392,7 +392,29 @@ namespace Playground.Mindustry.Blocks
 
                 id++;
             }
-
+            
+            //Idk wtf is this
+            _block = new Block()
+            {
+                BlockId = id,
+                BlockName = "removeWall",
+                BlockType = "RemoveWall",
+                Size = 1,
+            };
+            blocks["removeWall"] = _block;
+            BlocksById[id++] = _block;
+            
+            
+            _block = new Block()
+            {
+                BlockId = id,
+                BlockName = "remove-ore",
+                BlockType = "RemoveOre",
+                Size = 1,
+            };
+            blocks["remove-ore"] = _block;
+            BlocksById[id++] = _block;
+            
             // var sb = new StringBuilder();
             foreach (var (_, block) in blocks)
             {
