@@ -1,12 +1,11 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using DiscordBot.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordBot.Modules;
 
-public class StarModule(BotDatabase db , DiscordSocketClient client) : InteractionModuleBase<SocketInteractionContext>
+public class StarModule(BotDatabase db) : InteractionModuleBase<SocketInteractionContext>
 {
     const string Star_Code = @"⭐";
     
@@ -43,7 +42,7 @@ public class StarModule(BotDatabase db , DiscordSocketClient client) : Interacti
         switch (Context.Interaction.UserLocale)
         {
             case "ru":
-                await RespondAsync($"Сообщения будут добавлятся на доску почета по достежению {count} {Star_Code}", ephemeral: true);
+                await RespondAsync($"Сообщения будут добавляться на доску почета по достежению {count} {Star_Code}", ephemeral: true);
                 break;
             default:
                 await RespondAsync($"Now messages will be sent to starboard once they recieve {count} {Star_Code}", ephemeral: true);
