@@ -94,12 +94,24 @@ public class PurgeModule(BotDatabase db) : InteractionModuleBase<SocketInteracti
         foreach (var socketGuildChannel in Context.Guild.Channels.Where(x => x is ITextChannel))
         {
             var channel = (ITextChannel) socketGuildChannel;
-            var messages = await channel.GetMessagesAsync(200).FlattenAsync();
+            try
+            {
+                var messages = await channel.GetMessagesAsync(200).FlattenAsync();
 
-            ImmutableArray<IMessage> messagesToDelete = [..messages.Where(x => x.Author.Id == user.Id).Reverse()];
+                ImmutableArray<IMessage> messagesToDelete = [..messages.Where(x => x.Author.Id == user.Id &&
+                    x.Timestamp.Date.AddDays(12) > DateTime.Now).Reverse()];
 
-            if(!messagesToDelete.IsEmpty)
-                await channel.DeleteMessagesAsync(messagesToDelete);
+                if (!messagesToDelete.IsEmpty)
+                    await channel.DeleteMessagesAsync(messagesToDelete);
+            }
+            catch (Exception e)
+            {
+                if (e is ArgumentOutOfRangeException ex)
+                {
+                    Console.WriteLine($"Failed to receive messages for deletion from {channel.Name} because some of them are older than two weeks.");
+                }
+            }
+            
         }
         
         var cfg = await db.GetNonTrackedConfig(Context.Guild.Id);
@@ -111,10 +123,13 @@ public class PurgeModule(BotDatabase db) : InteractionModuleBase<SocketInteracti
             return;
         
         var emb = new EmbedBuilder();
+        var sb = new StringBuilder();
         emb.WithAuthor(user)
-            .WithColor(ConfigModule.EmbedColor)
-            .WithTitle($"Модератор {Context.User.Mention} использовал /user-purge на пользователе {user.DisplayName}({user.Mention})!");
-        emb.WithDescription(kick ? "Пользователь был изгнан с сервера." : "Пользователь не был автоматически изгнан.");
+            .WithColor(ConfigModule.EmbedColor);
+        sb.Append(
+            $"Модератор {Context.User.Mention} использовал /user-purge на пользователе {user.DisplayName}({user.Mention})!\n\n");
+        sb.Append(kick ? "Пользователь был изгнан с сервера." : "Пользователь не был автоматически изгнан.");
+        emb.WithDescription(sb.ToString());
         await logChannel.SendMessageAsync(embed: emb.Build());
     }
 }
