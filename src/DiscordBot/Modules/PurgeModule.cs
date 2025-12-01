@@ -63,4 +63,58 @@ public class PurgeModule(BotDatabase db) : InteractionModuleBase<SocketInteracti
             await logChannel.SendMessageAsync(embed: emb.Build());
         }
     }
+    
+    [SlashCommand("user-purge", "Удалить среди последних 200 сообщений от одного пользователя", runMode: RunMode.Async)]
+    [DefaultMemberPermissions(GuildPermission.ManageMessages)]
+    public async Task UserPurge(IGuildUser user, bool kick = false)
+    {
+        var responded = false;
+        if (kick)
+        {
+            if (user.GuildPermissions.KickMembers || user.GuildPermissions.BanMembers || user.GuildPermissions.ManageMessages||
+                Context.Client.CurrentUser.Id == user.Id)
+                kick = false;
+            else if (!Context.Guild.GetUser(Context.Client.CurrentUser.Id).GuildPermissions.KickMembers)
+            {
+                await RespondAsync($"Удаление сообщений от пользователя {user.Mention} во всех каналах." +
+                                   $"У бота нет прав на исключение пользователей!",
+                    ephemeral: true);
+                responded = true;
+            }
+            else
+            {
+                await user.KickAsync($"Пользователь был изгнан модератором {Context.User.Username} во время чистки сообщений.");
+            }
+        }
+        
+        if(!responded)
+            await RespondAsync($"Удаление сообщений от пользователя {user.Mention} во всех каналах",
+                ephemeral: true);
+
+        foreach (var socketGuildChannel in Context.Guild.Channels.Where(x => x is ITextChannel))
+        {
+            var channel = (ITextChannel) socketGuildChannel;
+            var messages = await channel.GetMessagesAsync(200).FlattenAsync();
+
+            ImmutableArray<IMessage> messagesToDelete = [..messages.Where(x => x.Author.Id == user.Id).Reverse()];
+
+            if(!messagesToDelete.IsEmpty)
+                await channel.DeleteMessagesAsync(messagesToDelete);
+        }
+        
+        var cfg = await db.GetNonTrackedConfig(Context.Guild.Id);
+
+        if (cfg?.LogChannel == null)
+            return;
+        var logChannel = Context.Guild.GetChannel(cfg.LogChannel.Value) as SocketTextChannel;
+        if (logChannel == null)
+            return;
+        
+        var emb = new EmbedBuilder();
+        emb.WithAuthor(user)
+            .WithColor(ConfigModule.EmbedColor)
+            .WithTitle($"Модератор {Context.User.Mention} использовал /user-purge на пользователе {user.DisplayName}({user.Mention})!");
+        emb.WithDescription(kick ? "Пользователь был изгнан с сервера." : "Пользователь не был автоматически изгнан.");
+        await logChannel.SendMessageAsync(embed: emb.Build());
+    }
 }
