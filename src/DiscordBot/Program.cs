@@ -396,8 +396,7 @@ async Task OnMessage(SocketMessage msg)
                     if (cmd.Name == "wrn") // Skip this alias
                         continue;
 
-                    if (cmd.DefaultMemberPermissions.RawValue == 0 ||
-                        (cmd.DefaultMemberPermissions.RawValue & user.GuildPermissions.RawValue) > 0ul)
+                    if (cmd.DefaultMemberPermissions.RawValue == 0)
                         sb.Append($"</{cmd.Name}:{cmd.Id}> - {cmd.Description}\n");
                 }
 
@@ -408,7 +407,7 @@ async Task OnMessage(SocketMessage msg)
                 var rest = await msg.Channel.SendMessageAsync(embed: emb.Build());
                 _ = Task.Run(() =>
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(30));
+                    Task.Delay(TimeSpan.FromSeconds(30));
                     try
                     {
                         rest.DeleteAsync();
