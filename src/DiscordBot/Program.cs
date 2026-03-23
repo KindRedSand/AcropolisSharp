@@ -405,12 +405,12 @@ async Task OnMessage(SocketMessage msg)
                     .WithValue(sb.ToString());
                 emb.WithFields(field);
                 var rest = await msg.Channel.SendMessageAsync(embed: emb.Build());
-                _ = Task.Run(() =>
+                _ = Task.Run(async () =>
                 {
-                    Task.Delay(TimeSpan.FromSeconds(30));
+                    await Task.Delay(TimeSpan.FromSeconds(30));
                     try
                     {
-                        rest.DeleteAsync();
+                        await rest.DeleteAsync();
                     }
                     catch (Exception)
                     {
