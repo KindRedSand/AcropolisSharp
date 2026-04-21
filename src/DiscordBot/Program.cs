@@ -38,15 +38,22 @@ Items.Load();
 // var db = new BotDatabase();
 // await db.Database.EnsureCreatedAsync();
 
-
-var client = new DiscordSocketClient(new DiscordSocketConfig
+var clientConfig = new DiscordSocketConfig
 {
+    // GatewayIntents = GatewayIntents.All & (~GatewayIntents.GuildPresences) & (~GatewayIntents.GuildScheduledEvents) &
+    //                  (~GatewayIntents.GuildInvites),
     GatewayIntents = GatewayIntents.Guilds |
                      GatewayIntents.GuildEmojis | GatewayIntents.GuildMessageReactions | GatewayIntents.GuildMessages |
                      GatewayIntents.MessageContent | GatewayIntents.DirectMessageReactions |
-                     GatewayIntents.GuildBans | GatewayIntents.GuildMembers,
+                     GatewayIntents.GuildBans | GatewayIntents.GuildMembers | 
+                     GatewayIntents.GuildPresences, //Idk why but bot misses GuildMembers intent
+                                                    //if this flag doesn't present
     UseInteractionSnowflakeDate = false //Sometimes give false positive System.TimeoutException
-});
+};
+var client = new DiscordSocketClient(clientConfig);
+
+//https://github.com/discord-net/Discord.Net/blob/dev/docs/faq/basics/client-basics.md#common-intents
+client.PresenceUpdated += (user, presence, arg3) => Task.CompletedTask;
 
 var commands = new CommandService();
 var interaction = new InteractionService(client);
