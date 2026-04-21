@@ -440,6 +440,32 @@ async Task OnMessage(SocketMessage msg)
 
     messages[messagesIndex++] = messageModel;
     messagesIndex %= messages.Length;
+    
+    await HandleCommandAsync(msg);
+}
+
+async Task HandleCommandAsync(SocketMessage msg)
+{
+    try
+    {
+        string prefix = "!";
+        if (!(msg is SocketUserMessage message)) return;
+        int argPos = 0;
+        var context = new SocketCommandContext(client, message);
+        if (!(message.HasStringPrefix(prefix, ref argPos) ||
+              message.HasMentionPrefix(client.CurrentUser, ref argPos))) return;
+
+        var result = await commands.ExecuteAsync(context, argPos, services);
+        // if (!result.IsSuccess)
+        // {
+        //     Console.WriteLine(result.ErrorReason);
+        // }
+                    
+    }
+    catch
+    {
+        //ignored
+    }
 }
 
 async Task OnEdit(Cacheable<IMessage, ulong> cache, SocketMessage msg, ISocketMessageChannel ichannel)
